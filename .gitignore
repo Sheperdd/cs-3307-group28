@@ -1,3 +1,6 @@
 out/
 build/
 .vs/
+
+# Ignore user-specific files
+CMakeUserPresets.json
