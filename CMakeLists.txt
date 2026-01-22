@@ -9,6 +9,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # --- Download libs ---
 include(FetchContent)
 
+# Download SQLiteCpp (A nice C++ wrapper for SQLite)
+FetchContent_Declare(
+    SQLiteCpp
+    GIT_REPOSITORY https://github.com/SRombauts/SQLiteCpp.git
+    GIT_TAG 3.3.3
+)
+
+set(SQLITECPP_INTERNAL_SQLITE ON CACHE BOOL "Use SQLiteCPP's built-in SQLite" FORCE)
+FetchContent_MakeAvailable(SQLiteCpp)
+
 # Download JSON Library
 FetchContent_Declare(
     json

@@ -2,10 +2,17 @@
 #define DATABASEMANAGER_H
 
 #include <string>
+#include <SQLiteCpp/SQLiteCpp.h>
 
 class DatabaseManager {
+private:
+	mutable SQLite::Database db;
 public:
-    std::string testConnection();
+	DatabaseManager();
+
+	bool addUser(const std::string& name, const std::string& email, const std::string& password);
+
+	int getUserCount();
 };
 
 #endif
