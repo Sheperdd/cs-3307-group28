@@ -1,6 +1,7 @@
 Kay was here!
 Aaron was also here!
 Dame was also also here!
+Shane was also also here! 
 
 # TorqueDesk: Modern Automotive Repair Management Software
 Built for a third-year software engineering course, TorqueDesk is a platform designed to take the headache out of automotive repairs for both the mechanic and the vehicle owner.
@@ -43,13 +44,13 @@ From the repo root:
 After building:
 - `ctest --test-dir build --output-on-failure`
 
-If CTest doesn’t find tests in your configuration, you can also run the test binary directly:
+If CTest doesnï¿½t find tests in your configuration, you can also run the test binary directly:
 - `./build/tests/UnitTests` (path may vary by generator/config)
 
 ---
 
 ## Visual Studio 2022 + WSL workflow (Windows)
-If you’re using Visual Studio with a WSL toolchain:
+If youï¿½re using Visual Studio with a WSL toolchain:
 - Open the folder as a CMake project.
 - Ensure the selected kit/toolchain targets WSL.
 - Build with the default CMake targets (Ninja is typical for VS CMake projects).
