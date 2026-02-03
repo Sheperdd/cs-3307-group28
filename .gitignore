@@ -2,6 +2,7 @@ out/
 build/
 .vs/
 .vscode/
+torquedesk.db
 
 # Ignore user-specific files
 CMakeUserPresets.json
