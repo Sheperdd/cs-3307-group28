@@ -2,6 +2,7 @@ Kay was here!
 Aaron was also here!
 Dame was also also here!
 Shane was also also here! 
+Sviatoslav was also here!
 
 # TorqueDesk: Modern Automotive Repair Management Software
 Built for a third-year software engineering course, TorqueDesk is a platform designed to take the headache out of automotive repairs for both the mechanic and the vehicle owner.
