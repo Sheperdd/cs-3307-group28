@@ -18,7 +18,7 @@ void Server::do_accept()
             if (!ec)
             {
                 // connection accepted so we can create a session for them
-                Session::create(std::move(socket), db_)->start();
+                std::make_shared<Session>(std::move(socket), db_)->start();
             }
             // Loop back and wait for the next person
             do_accept();

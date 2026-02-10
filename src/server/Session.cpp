@@ -1,11 +1,5 @@
 #include "Session.h"
 
-Session::pointer Session::create(tcp::socket socket, DatabaseManager &db)
-{
-  // We use 'new' here because we want to return a shared_ptr, and 'make_shared' doesn't work with private constructors
-  return pointer(new Session(std::move(socket), db));
-}
-
 tcp::socket &Session::getSocket()
 {
   // This function isn't actually used in our current code, but it could be useful if we want to do something with the socket outside of the Session class

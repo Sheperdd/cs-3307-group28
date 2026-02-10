@@ -14,14 +14,11 @@ using boost::asio::ip::tcp;
 class Session : public std::enable_shared_from_this<Session>
 {
 public:
-  // we use a shared_ptr to keep the Session object alive during asynchronous operations
-  typedef std::shared_ptr<Session> pointer;
-
-  /// @brief  Creates a new Session instance for a given socket and database reference.
+  /// @brief Constructs a Session object with the provided socket and database reference.
   /// @param socket The TCP socket representing the client's connection.
   /// @param db A reference to the DatabaseManager instance for handling database operations.
-  /// @return A shared pointer to the newly created Session instance.
-  static pointer create(tcp::socket socket, DatabaseManager &db);
+  Session(tcp::socket socket, DatabaseManager &db)
+      : socket_(std::move(socket)), db_(db) {}
 
   /// @brief Retrieves the socket associated with this session.
   /// @return A reference to the tcp::socket used for communication with the client.
@@ -31,12 +28,6 @@ public:
   void start();
 
 private:
-  /// @brief Constructs a Session object with the provided socket and database reference.
-  /// @param socket The TCP socket representing the client's connection.
-  /// @param db A reference to the DatabaseManager instance for handling database operations.
-  Session(tcp::socket socket, DatabaseManager &db)
-      : socket_(std::move(socket)), db_(db) {}
-
   /// @brief Initiates an asynchronous read operation to receive data from the client. Upon receiving data, it processes the message and prepares for the next read operation.
   void do_read();
 
