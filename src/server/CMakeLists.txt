@@ -14,6 +14,7 @@ message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
 add_executable(TorqueServer 
     main.cpp 
     Server.cpp
+    Session.cpp
 )
 
 # Link the Engine (like the Backend Logic) and Boost to this executable
