@@ -14,7 +14,7 @@ public:
 	bool addUser(const std::string& name, const std::string& email, const std::string& password);
 
 	nlohmann::json getUserById(int userId);
-	nlohmann::json getUserByEmail(int userEmail);
+	nlohmann::json getUserByEmail(const std::string& userEmail);
 	nlohmann::json getAllUsers();
 	bool updateUser(int userId, const std::string& name, const std::string& password);
 	bool updatePassword(int userId, const std::string & name,const std::string newPassword);

@@ -2,19 +2,20 @@
 #include "Server.h"
 #include <iostream>
 
-/// @brief The main entry point for the TorqueDesk server application. Initializes the server and starts the I/O context to handle incoming client connections and requests.
-/// @return an int value indicating the success or failure of the program execution.
+/// @brief Entry point for the TorqueDesk REST API server.
+///        Creates the io_context, instantiates the Server (which starts
+///        the coroutine-based HTTP listener), and runs the event loop.
+/// @return 0 on clean exit, non-zero on unhandled exception.
 int main()
 {
     try
     {
-        // The engine that drives the network events
         boost::asio::io_context io_context;
 
-        // Create our Server on Port 6967
+        // Create the HTTP server on port 6967
         Server s(io_context, 6967);
 
-        // Run the loop forever
+        // Run the event loop (blocks until all work is done)
         io_context.run();
     }
     catch (std::exception &e)

@@ -7,6 +7,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 find_package(Boost CONFIG REQUIRED COMPONENTS system)
+find_package(Threads REQUIRED)
 
 message(STATUS "Boost version: ${Boost_VERSION}")
 message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
@@ -14,12 +15,13 @@ message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
 add_executable(TorqueServer 
     main.cpp 
     Server.cpp
-    Session.cpp
+    HttpSession.cpp
 )
 
-# Link the Engine (like the Backend Logic) and Boost to this executable
+# Link the Engine (like the Backend Logic), Boost, and Threads to this executable
 target_link_libraries(TorqueServer 
     PRIVATE 
-    TorqueEngine    # Database Logic
-    Boost::system   # Networking
+    TorqueEngine        # Database Logic
+    Boost::system       # Networking (Asio + Beast)
+    Threads::Threads    # Thread pool for DB operations
 )

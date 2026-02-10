@@ -1,26 +1,34 @@
 #include "Server.h"
-#include "Session.h"
+#include "HttpSession.h"
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <iostream>
 
-// Main server stuff
-Server::Server(boost::asio::io_context &io_context, short port) : acceptor_(io_context, tcp::endpoint(tcp::v4(), port))
+Server::Server(net::io_context &io_context, short port)
 {
-    std::cout << "TorqueDesk Server running on port " << port << "..." << std::endl;
-    do_accept();
+    // Build the acceptor, bind, and listen – all before spawning the coroutine
+    tcp::acceptor acceptor(io_context, {tcp::v4(), static_cast<net::ip::port_type>(port)});
+    std::cout << "TorqueDesk REST API running on http://localhost:" << port << " ..." << std::endl;
+
+    // Launch the listener coroutine on the io_context
+    net::co_spawn(io_context,
+                  do_listen(std::move(acceptor)),
+                  net::detached);
 }
 
-void Server::do_accept()
+net::awaitable<void> Server::do_listen(tcp::acceptor acceptor)
 {
-    // create a 'slot' type thing for a new socket, then wait for a connection
-    acceptor_.async_accept(
-        [this](boost::system::error_code ec, tcp::socket socket)
-        {
-            if (!ec)
-            {
-                // connection accepted so we can create a session for them
-                std::make_shared<Session>(std::move(socket), db_)->start();
-            }
-            // Loop back and wait for the next person
-            do_accept();
-        });
+    for (;;)
+    {
+        // co_await a new connection
+        tcp::socket socket = co_await acceptor.async_accept(net::use_awaitable);
+
+        // Spawn an HTTP-session coroutine for this client
+        net::co_spawn(
+            acceptor.get_executor(),
+            http_session(std::move(socket), db_, pool_),
+            net::detached);
+    }
 }

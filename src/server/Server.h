@@ -1,24 +1,30 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <boost/asio/thread_pool.hpp>
 
 #include "../engine/DatabaseManager.h"
 
-using boost::asio::ip::tcp;
+namespace net = boost::asio;
+using tcp = net::ip::tcp;
 
-/// @brief The main server class. Listens for new connections and creates sessions for them. Also holds the database instance.
+/// @brief The main HTTP server class.  Listens for new connections on the
+///        given port, spawns an HTTP-session coroutine for each one, and
+///        owns the shared DatabaseManager and DB thread pool.
 class Server
 {
 public:
-    /// @brief Constructor for the server. Sets up the acceptor and starts listening for connections.
-    /// @param io_context The io_context to use for asynchronous operations
-    /// @param port The port to listen on
-    Server(boost::asio::io_context &io_context, short port);
+    /// @brief Constructs the server, opens the acceptor, and starts the
+    ///        listener coroutine.
+    /// @param io_context The io_context that drives asynchronous I/O.
+    /// @param port       The TCP port to listen on.
+    Server(net::io_context &io_context, short port);
 
 private:
-    /// @brief The function that waits for new people (or connections). When a connection is accepted, it creates a new session for them and then loops back to wait for the next connection.
-    void do_accept(); // The function that waits for new people (or connections)
+    /// @brief Coroutine that loops forever accepting new TCP connections.
+    ///        For each accepted socket it co_spawns an http_session coroutine.
+    net::awaitable<void> do_listen(tcp::acceptor acceptor);
 
-    tcp::acceptor acceptor_; // The listening Socket for the server
-    DatabaseManager db_;     // The ONE database instance for the whole app
+    DatabaseManager db_;       // The ONE database instance for the whole app
+    net::thread_pool pool_{4}; // Thread pool for blocking DB work
 };

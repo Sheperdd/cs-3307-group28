@@ -66,7 +66,7 @@ nlohmann::json DatabaseManager::getUserById(int userId){
 }
 
 //getting user info by using their email
-nlohmann::json DatabaseManager::getUserByEmail(int userEmail){
+nlohmann::json DatabaseManager::getUserByEmail(const std::string& userEmail){
     try{
         SQLite::Statement query(db, "SELECT * FROM users WHERE email = ?");
         query.bind(1, userEmail);
@@ -88,7 +88,7 @@ nlohmann::json DatabaseManager::getUserByEmail(int userEmail){
 //getting all the users of the platform
 nlohmann::json DatabaseManager::getAllUsers(){
     try{
-        SQLite::Statement query(db, "SELECT * FROM users WHERE email = ?");
+        SQLite::Statement query(db, "SELECT * FROM users");
         nlohmann::json users = nlohmann::json::array();
 
         while (query.executeStep()){
@@ -96,8 +96,9 @@ nlohmann::json DatabaseManager::getAllUsers(){
             user["id"] = query.getColumn(0).getInt();
             user["name"] = query.getColumn(1).getText();
             user["email"] = query.getColumn(2).getText();
-            return user;
+            users.push_back(user);
         }
+        return users;
     }
     catch (std::exception& e){
         std::cerr << "Get All Users Error: " << e.what() << std::endl;
@@ -108,15 +109,15 @@ nlohmann::json DatabaseManager::getAllUsers(){
 //updating user and their information
 bool DatabaseManager::updateUser(int userId, const std::string& name, const std::string& password){
     try{
-        SQLite::Statement query(db, "UPDATE users SET password =? WHERE id = ?");
-        query.bind(1,name);
-        query.bind(2,password);;
+        SQLite::Statement query(db, "UPDATE users SET name = ?, password = ? WHERE id = ?");
+        query.bind(1, name);
+        query.bind(2, password);
         query.bind(3, userId);
 
         query.exec();
         return true;
     }catch (std::exception& e){
-        std::cerr << "Update Password Error: " << e.what() << std::endl;
+        std::cerr << "Update User Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -126,8 +127,8 @@ bool DatabaseManager::updatePassword(int userId, const std::string & name,const 
     try{
 
         SQLite::Statement query(db, "UPDATE users SET password =? WHERE id = ?");
-        query.bind(0, newPassword);
-        query.bind(1, userId);
+        query.bind(1, newPassword);
+        query.bind(2, userId);
 
         query.exec();
         return true;
