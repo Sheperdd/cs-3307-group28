@@ -26,5 +26,5 @@ private:
     net::awaitable<void> do_listen(tcp::acceptor acceptor);
 
     DatabaseManager db_;       // The ONE database instance for the whole app
-    net::thread_pool pool_{4}; // Thread pool for blocking DB work
+    net::thread_pool pool_{8}; // Thread pool for blocking DB work
 };
