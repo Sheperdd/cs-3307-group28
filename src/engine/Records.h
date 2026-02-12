@@ -143,7 +143,7 @@ struct ReviewRecord {
     JobId jobId{};
     UserId customerId{};
     MechanicId mechanicId{};
-    int rating{ 0 };          // 1�5
+    int rating{ 0 };
     std::string comment;
     std::string createdAt; // ISO datetime
 };
