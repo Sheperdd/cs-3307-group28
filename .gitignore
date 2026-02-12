@@ -6,3 +6,5 @@ torquedesk.db
 
 # Ignore user-specific files
 CMakeUserPresets.json
+#Daimen's build instructions
+build.txt

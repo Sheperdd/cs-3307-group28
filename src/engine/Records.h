@@ -1,0 +1,153 @@
+#pragma once
+
+#include <string>
+#include <vector>
+#include <optional>
+#include <cstdint>
+
+// ----------- ID Types -----------
+using UserId = int64_t;
+using VehicleId = int64_t;
+using SymptomFormId = int64_t;
+using MechanicId = int64_t;
+using AppointmentId = int64_t;
+using JobId = int64_t;
+using ReviewId = int64_t;
+
+// ----------- Enums -----------
+enum class UserRole {
+    CUSTOMER,
+    MECHANIC
+};
+
+enum class AppointmentStatus {
+    REQUESTED,
+    SCHEDULED,
+    CANCELLED,
+    COMPLETED
+};
+
+enum class JobStage {
+    RECEIVED,
+    DIAGNOSTICS,
+    PARTS,
+    REPAIR,
+    QA,
+    DONE
+};
+
+// ----------- User -----------
+struct UserRecord {
+    UserId id{};
+    std::string email;
+    std::string passwordHash;
+    UserRole role{ UserRole::CUSTOMER };
+    std::string createdAt; // ISO string for simplicity
+};
+
+struct UserUpdate {
+    std::optional<std::string> email;
+    std::optional<UserRole> role;
+};
+
+// ----------- Vehicle -----------
+struct VehicleRecord {
+    VehicleId id{};
+    UserId ownerUserId{};
+    std::string vin;
+    std::string make;
+    std::string model;
+    int year{ 0 };
+    int mileage{ 0 };
+};
+
+struct VehicleUpdate {
+    std::optional<std::string> vin;
+    std::optional<std::string> make;
+    std::optional<std::string> model;
+    std::optional<int> year;
+    std::optional<int> mileage;
+};
+
+// ----------- Symptom Form -----------
+struct SymptomFormRecord {
+    SymptomFormId id{};
+    UserId customerId{};
+    VehicleId vehicleId{};
+    std::string description;
+    int severity{ 0 };        // simple scale 1–5
+    std::string createdAt;
+};
+
+struct SymptomFormUpdate {
+    std::optional<std::string> description;
+    std::optional<int> severity;
+};
+
+// ----------- Mechanic -----------
+struct MechanicRecord {
+    MechanicId id{};
+    UserId userId{};
+    std::string displayName;
+    std::string shopName;
+    double hourlyRate{ 0.0 };
+    std::vector<std::string> specialties; // simple tags (e.g., "BRAKES", "ENGINE")
+};
+
+struct MechanicUpdate {
+    std::optional<std::string> displayName;
+    std::optional<std::string> shopName;
+    std::optional<double> hourlyRate;
+    std::optional<std::vector<std::string>> specialties;
+};
+
+// ----------- Availability -----------
+struct TimeSlot {
+    std::string start; // ISO datetime
+    std::string end;   // ISO datetime
+};
+
+struct DateRange {
+    std::string start;
+    std::string end;
+};
+
+// ----------- Appointment -----------
+struct AppointmentRecord {
+    AppointmentId id{};
+    UserId customerId{};
+    MechanicId mechanicId{};
+    SymptomFormId formId{};
+    std::string scheduledAt; // ISO datetime
+    AppointmentStatus status{ AppointmentStatus::REQUESTED };
+    std::string note;
+};
+
+// ----------- Job -----------
+struct JobRecord {
+    JobId id{};
+    AppointmentId appointmentId{};
+    MechanicId mechanicId{};
+    UserId customerId{};
+    JobStage stage{ JobStage::RECEIVED };
+    int percentComplete{ 0 }; // 0–100
+    std::string lastNote;
+    std::string updatedAt;
+};
+
+// ----------- Review -----------
+struct ReviewRecord {
+    ReviewId id{};
+    JobId jobId{};
+    UserId customerId{};
+    MechanicId mechanicId{};
+    int rating{ 0 };          // 1–5
+    std::string comment;
+    std::string createdAt;
+};
+
+// ----------- Search / Filters -----------
+struct MechanicSearchFilter {
+    std::optional<std::string> specialty;
+    std::optional<double> maxDistanceKm; // can be stubbed in MVP
+};

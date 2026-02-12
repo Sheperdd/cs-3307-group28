@@ -19,7 +19,7 @@
   ],
   "buildPresets": [
     {
-      "name": "wsl-debug",
+      "name": "wsl-debug-1",
       "configurePreset": "wsl-debug"
     }
   ]
