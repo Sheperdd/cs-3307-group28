@@ -1,14 +1,5 @@
 #include "Users.h"
 
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-#include <nlohmann/json.hpp>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <charconv>
-
 using json = nlohmann::json;
 
 net::awaitable<http::response<http::string_body>>
@@ -21,7 +12,7 @@ UsersHandler::handle(const http::request<http::string_body> &req,
     // check the request method and path (path_parts[0] should be "users")
     if (req.method() == http::verb::get && path_parts.size() == 2)
     {
-        // Ge the user ID from the path and validate it
+        // Get the user ID from the path and validate it
         int userId = http_utils::parse_int(path_parts[1]);
         if (userId < 0)
         {
