@@ -88,8 +88,8 @@ struct SymptomFormRecord {
     UserId customerId{};
     VehicleId vehicleId{};
     std::string description;
-    int severity{ 0 }; // 1–5
-    std::string createdAt; // ISO datetime
+    int severity{ 0 };        // simple scale 1â€“5
+    std::string createdAt;
 };
 
 struct SymptomFormUpdate {
@@ -132,7 +132,7 @@ struct JobRecord {
     MechanicId mechanicId{};
     UserId customerId{};
     JobStage stage{ JobStage::RECEIVED };
-    int percentComplete{ 0 }; // 0–100
+    int percentComplete{ 0 }; // 0ï¿½100
     std::string lastNote;
     std::string updatedAt; // ISO datetime
 };
@@ -143,7 +143,7 @@ struct ReviewRecord {
     JobId jobId{};
     UserId customerId{};
     MechanicId mechanicId{};
-    int rating{ 0 }; // 1–5
+    int rating{ 0 };          // 1ï¿½5
     std::string comment;
     std::string createdAt; // ISO datetime
 };
