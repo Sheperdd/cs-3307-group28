@@ -1,195 +1,188 @@
 #include "DatabaseManager.h"
-#include <nlohmann/json.hpp>
 #include <iostream>
+#include <chrono>
+#include <ctime>
 
-// Main Constructor- Opens "torquedesk.db"
-// If it doesn't exist, it creates it (OPEN_CREATE)
+//Generates current date and time;
+static std::string nowISO() {
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::gmtime(&t);
+    char buffer[30];
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return std::string(buffer);
+}
+
+// -------------------- Constructor / Destructor --------------------
 DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
-	// Initialize the tables immediately using basic SQL commands
     try {
         db.exec("CREATE TABLE IF NOT EXISTS users ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "name TEXT, "
-            "email TEXT, "
-            "password TEXT)");
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "email TEXT, "
+                "password TEXT, "
+                "role INTEGER, "
+                "createdAt TEXT)");
     }
     catch (std::exception& e) {
         std::cerr << "DB initializing Error: " << e.what() << std::endl;
     }
 }
 
-DatabaseManager::~DatabaseManager() {
+DatabaseManager::~DatabaseManager() {}
 
-}
-
-
-// Adds a user to the database
-bool DatabaseManager::addUser(const std::string& name, const std::string& email, const std::string& password) {
+// -------------------- User CRUD --------------------
+UserId DatabaseManager::createUser(const std::string& name,
+                                   const std::string& email,
+                                   const std::string& passwordHash,
+                                   UserRole role)
+{
     try {
-		// using 'statement' cause its the best way to avoid SQL injection and stuff
-        SQLite::Statement query(db, "INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+        SQLite::Statement query(db,
+            "INSERT INTO users (email, password, role, createdAt) VALUES (?, ?, ?, ?)");
 
-        // Bind the C++ strings to the ? placeholders
-        query.bind(1, name);
-        query.bind(2, email);
-		query.bind(3, password);
+        query.bind(1, email);
+        query.bind(2, passwordHash);
+        query.bind(3, static_cast<int>(role));
+        query.bind(4, nowISO());
 
-        query.exec(); // Run it
-        return true;
-    }
-    catch (std::exception& e) {
-        std::cerr << "Add User Error: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-
-
-int DatabaseManager::getUserCount() {
-    // A shortcut to get a value quick from the db
-    return db.execAndGet("SELECT COUNT(*) FROM users").getInt();
-}
-
-
-//getting user info by using their id
-nlohmann::json DatabaseManager::getUserById(int userId){
-    try{
-    SQLite::Statement query (db, "SELECT * FROM users WHERE id = ?");
-    query.bind(1,userId);
-
-    if (query.executeStep()){
-        nlohmann::json user;
-        user ["id"] = query.getColumn(0).getInt();
-        user ["name"] = query.getColumn(1).getText();
-        user ["email"] = query.getColumn(2).getText();
-        return user;
-    }
-    return nullptr;
-    }
-    catch (std::exception& e){
-    std::cerr << "Get User Error: " << e.what() << std::endl;
-    return nullptr;
+        query.exec();
+        return static_cast<UserId>(db.getLastInsertRowid());
+    } catch (std::exception& e) {
+        std::cerr << "Create User Error: " << e.what() << std::endl;
+        return -1;
     }
 }
 
-//getting user info by using their email
-nlohmann::json DatabaseManager::getUserByEmail(const std::string& userEmail){
-    try{
-        SQLite::Statement query(db, "SELECT * FROM users WHERE email = ?");
-        query.bind(1, userEmail);
+std::optional<UserRecord> DatabaseManager::getUserRecordById(UserId id)
+{
+    try {
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE id = ?");
+        query.bind(1, id);
 
-        if (query.executeStep()){
-            nlohmann::json user;
-            user["id"] = query.getColumn(0).getInt();
-            user["name"] = query.getColumn(1).getText();
-            user["email"] = query.getColumn(2).getText();
-            return user;
+        if (query.executeStep()) {
+            UserRecord u;
+            u.id = query.getColumn(0).getInt64();
+            u.email = query.getColumn(1).getText();
+            u.passwordHash = query.getColumn(2).getText();
+            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
+            u.createdAt = query.getColumn(4).getText();
+            return u;
         }
-        return nullptr;
-    }catch (std::exception& e){
-        std::cerr << "Get User Error: " << e.what() << std::endl;
-        return nullptr;
+        return std::nullopt;
+    } catch (std::exception& e) {
+        std::cerr << "Get User Record Error: " << e.what() << std::endl;
+        return std::nullopt;
     }
 }
 
-//getting all the users of the platform
-nlohmann::json DatabaseManager::getAllUsers(){
-    try{
-        SQLite::Statement query(db, "SELECT * FROM users");
-        nlohmann::json users = nlohmann::json::array();
+std::optional<UserRecord> DatabaseManager::getUserRecordByEmail(const std::string& email)
+{
+    try {
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE email = ?");
+        query.bind(1, email);
 
-        while (query.executeStep()){
-            nlohmann::json user;
-            user["id"] = query.getColumn(0).getInt();
-            user["name"] = query.getColumn(1).getText();
-            user["email"] = query.getColumn(2).getText();
-            users.push_back(user);
+        if (query.executeStep()) {
+            UserRecord u;
+            u.id = query.getColumn(0).getInt64();
+            u.email = query.getColumn(1).getText();
+            u.passwordHash = query.getColumn(2).getText();
+            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
+            u.createdAt = query.getColumn(4).getText();
+            return u;
         }
-        return users;
-    }
-    catch (std::exception& e){
-        std::cerr << "Get All Users Error: " << e.what() << std::endl;
-        return nlohmann::json::array();
+        return std::nullopt;
+    } catch (std::exception& e) {
+        std::cerr << "Get User Record by Email Error: " << e.what() << std::endl;
+        return std::nullopt;
     }
 }
 
-//updating user and their information
-bool DatabaseManager::updateUser(int userId, const std::string& name, const std::string& password){
-    try{
-        SQLite::Statement query(db, "UPDATE users SET name = ?, password = ? WHERE id = ?");
-        query.bind(1, name);
-        query.bind(2, password);
-        query.bind(3, userId);
+bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate& update)
+{
+    try {
+        std::string sql = "UPDATE users SET ";
+        bool first = true;
+        if (update.email.has_value()) {
+            sql += "email = ?";
+            first = false;
+        }
+        if (update.role.has_value()) {
+            if (!first) sql += ", ";
+            sql += "role = ?";
+        }
+        sql += " WHERE id = ?";
+
+        SQLite::Statement query(db, sql);
+
+        int idx = 1;
+        if (update.email.has_value()) query.bind(idx++, *update.email);
+        if (update.role.has_value()) query.bind(idx++, static_cast<int>(*update.role));
+        query.bind(idx, id);
 
         query.exec();
         return true;
-    }catch (std::exception& e){
-        std::cerr << "Update User Error: " << e.what() << std::endl;
+    } catch (std::exception& e) {
+        std::cerr << "Update User Record Error: " << e.what() << std::endl;
         return false;
     }
 }
 
-//updating  users password
-bool DatabaseManager::updatePassword(int userId, const std::string & name,const std::string newPassword){
-    try{
-
-        SQLite::Statement query(db, "UPDATE users SET password =? WHERE id = ?");
-        query.bind(1, newPassword);
-        query.bind(2, userId);
-
-        query.exec();
-        return true;
-    } catch (std::exception& e){
-        std::cerr <<"Update Password Error: " << e.what() << std::endl;
-        return false;
-    }
+// -------------------- Mechanic helpers --------------------
+nlohmann::json DatabaseManager::userRecordToJson(const UserRecord& u) const
+{
+    return nlohmann::json{
+        {"id", u.id},
+        {"email", u.email},
+        {"role", static_cast<int>(u.role)},
+        {"createdAt", u.createdAt}
+    };
 }
 
-//deleting user
-bool DatabaseManager::deleteUser(int userId){
-    try{
-        SQLite::Statement query(db, "DELETE FROM users WHERE id = ?");
-        query.bind(1, userId);
+nlohmann::json DatabaseManager::getAllByRole(UserRole role) const
+{
+    nlohmann::json arr = nlohmann::json::array();
+    try {
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE role = ?");
+        query.bind(1, static_cast<int>(role));
 
-        query.exec();
-        return true;
-    }catch (std::exception& e){
-        std::cerr << "Delete User Error: "<< e.what() << std::endl;
-        return false;
-    }
-}
-
-//verifying login of a user
-bool DatabaseManager::verifyLogin(const std::string &email, const std::string& pasword){
-    try{
-        SQLite::Statement query(db, "SELECT password FROM users WHERE email = ?");
-        query.bind(1,email);
-
-        if (query.executeStep()){
-            std::string storedPassword = query.getColumn(0).getText();
-            return storedPassword == pasword;;
+        while (query.executeStep()) {
+            UserRecord u;
+            u.id = query.getColumn(0).getInt64();
+            u.email = query.getColumn(1).getText();
+            u.passwordHash = query.getColumn(2).getText();
+            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
+            u.createdAt = query.getColumn(4).getText();
+            arr.push_back(userRecordToJson(u));
         }
-        return false;
-    }catch (std::exception & e){
-        std::cerr << "Verification Error:" << e.what() << std::endl;
-        return false;
+    } catch (std::exception& e) {
+        std::cerr << "Get All By Role Error: " << e.what() << std::endl;
     }
+    return arr;
 }
 
-//checking if the email exists as information of someones user
-bool DatabaseManager::emailExists(const std::string &email){
-    try{
-        SQLite::Statement query(db, "SELECT COUNT(*) FROM users WHERE email = ?");
-        query.bind(1,email);
-        query.executeStep();
-
-        return query.getColumn(0).getInt()>0;;
-    }catch (std::exception & e){
-        std::cerr << "Email Check Verification Error: " << e.what() << std::endl;
-        return false;
-    }
+// -------------------- Convenience wrappers --------------------
+bool DatabaseManager::addUser(const std::string& name, const std::string& email, const std::string& password) {
+    return createUser(name, email, password, UserRole::CUSTOMER) != -1;
 }
 
-void DatabaseManager::resetDatabase() {
-    db.exec("DROW TABLE IF EXISTS users");
+bool DatabaseManager::addMechanic(const std::string& name, const std::string& email, const std::string& password) {
+    return createUser(name, email, password, UserRole::MECHANIC) != -1;
+}
+
+nlohmann::json DatabaseManager::getMechanicById(int userId)
+{
+    auto rec = getUserRecordById(userId);
+    if (!rec.has_value() || rec->role != UserRole::MECHANIC) return {{"error", "Mechanic not found"}};
+    return userRecordToJson(*rec);
+}
+
+nlohmann::json DatabaseManager::getMechanicByEmail(const std::string& userEmail)
+{
+    auto rec = getUserRecordByEmail(userEmail);
+    if (!rec.has_value() || rec->role != UserRole::MECHANIC) return {{"error", "Mechanic not found"}};
+    return userRecordToJson(*rec);
+}
+
+nlohmann::json DatabaseManager::getAllMechanics()
+{
+    return getAllByRole(UserRole::MECHANIC);
 }
