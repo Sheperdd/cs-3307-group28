@@ -1,18 +1,14 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <boost/beast.hpp>
-#include <string>
-#include <vector>
+#include "EndpointHandler.h"
 
-#include "../../engine/DatabaseManager.h"
-
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
-using tcp = net::ip::tcp;
-
-class Appointments
+/// @brief Handles requests to /appointments and /appointments/{id}.
+class AppointmentsHandler : public EndpointHandler
 {
+public:
+  net::awaitable<http::response<http::string_body>>
+  handle(const http::request<http::string_body> &req,
+         const std::vector<std::string> &path_parts,
+         DatabaseManager &db,
+         net::thread_pool &pool) override;
 };

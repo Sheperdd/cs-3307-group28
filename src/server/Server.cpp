@@ -5,6 +5,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <iostream>
+#include <memory>
 
 Server::Server(net::io_context &io_context, short port)
 {
@@ -26,9 +27,12 @@ net::awaitable<void> Server::do_listen(tcp::acceptor acceptor)
         tcp::socket socket = co_await acceptor.async_accept(net::use_awaitable);
 
         // Spawn an HTTP-session coroutine for this client
+        auto session = std::make_shared<HttpSession>(
+            std::move(socket), db_, pool_);
+
         net::co_spawn(
             acceptor.get_executor(),
-            http_session(std::move(socket), db_, pool_),
+            session->run(),
             net::detached);
     }
 }

@@ -16,6 +16,13 @@ add_executable(TorqueServer
     main.cpp 
     Server.cpp
     HttpSession.cpp
+    endpoints/Users.cpp
+    endpoints/Appointments.cpp
+    endpoints/Jobs.cpp
+    endpoints/Mechanics.cpp
+    endpoints/Reviews.cpp
+    endpoints/Symptoms.cpp
+    endpoints/Vehicles.cpp
 )
 
 # Link the Engine (like the Backend Logic), Boost, and Threads to this executable
