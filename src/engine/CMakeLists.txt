@@ -2,7 +2,9 @@
 add_library(TorqueEngine STATIC
     DatabaseManager.cpp
     DatabaseManager.h
- "Records.h" "DTO.h")
+    "Records.h"
+    "RecordsSerialization.h"
+    "DTO.h")
 
 # Link libraries this engine needs
 target_link_libraries(TorqueEngine 
