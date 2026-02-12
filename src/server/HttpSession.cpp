@@ -92,13 +92,13 @@ route_request(const http::request<http::string_body> &req,
                              "Not found", req.version(), req.keep_alive());
 
     if (parts[0] == "users")
-        co_return co_await handle_users(req, parts, db, pool);
+        // co_return co_await handle_users(req, parts, db, pool);
 
-    if (parts[0] == "login")
-        co_return co_await handle_login(req, db, pool);
+        if (parts[0] == "login")
+            // co_return co_await handle_login(req, db, pool);
 
-    co_return make_error(http::status::not_found,
-                         "Not found", req.version(), req.keep_alive());
+            co_return make_error(http::status::not_found,
+                                 "Not found", req.version(), req.keep_alive());
 }
 
 // ---------------------------------------------------------------------------
