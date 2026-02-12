@@ -23,3 +23,25 @@ TEST_F(DatabaseTests, AddUserIncreasesCount) {
     EXPECT_TRUE(success);
     EXPECT_EQ(db.getUserCount(), 1);
 }
+
+TEST_F(DatabaseTests, DuplicateEmailFails) {
+    DatabaseManager db;
+
+    bool success = db.addUser ("Sam2", "Sam2@gmail.com", "12345");
+
+    EXPECT_TRUE(success);
+    EXPECT_EQ(db.getUserCount(),1);
+}
+
+
+TEST_F(DatabaseTests, DeleteUserDecreasesCount) {
+    DatabaseManager db;
+
+    db.addUser("Sam", "Sam@gmail.com", "12345");
+    EXPECT_EQ(db.getUserCount(), 1);
+
+    db.deleteUser(1);
+
+    EXPECT_EQ(db.getUserCount(), 0);
+
+}

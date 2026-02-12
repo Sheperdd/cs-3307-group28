@@ -10,8 +10,10 @@ private:
 	mutable SQLite::Database db;
 public:
 	DatabaseManager();
+	~DatabaseManager();
 
 	bool addUser(const std::string& name, const std::string& email, const std::string& password);
+	bool addMechanic(const std::string& name, const std::string& email, const std::string& password);
 
 	nlohmann::json getUserById(int userId);
 	nlohmann::json getUserByEmail(const std::string& userEmail);
@@ -19,11 +21,15 @@ public:
 	bool updateUser(int userId, const std::string& name, const std::string& password);
 	bool updatePassword(int userId, const std::string & name,const std::string newPassword);
 	bool deleteUser(int userId);
-
 	bool verifyLogin(const std::string &email, const std::string& pasword);
 	bool emailExists(const std::string &email);
-
 	int getUserCount();
+	void resetDatabase();
+
+	nlohmann::json getMechanicById(int userId);
+	nlohmann::json getMechanicByEmail(const std::string& userEmail);
+	nlohmann::json getAllMechanics();
+
 };
 
 #endif

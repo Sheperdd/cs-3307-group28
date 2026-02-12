@@ -18,6 +18,11 @@ DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE 
     }
 }
 
+DatabaseManager::~DatabaseManager() {
+
+}
+
+
 // Adds a user to the database
 bool DatabaseManager::addUser(const std::string& name, const std::string& email, const std::string& password) {
     try {
@@ -37,6 +42,8 @@ bool DatabaseManager::addUser(const std::string& name, const std::string& email,
         return false;
     }
 }
+
+
 
 int DatabaseManager::getUserCount() {
     // A shortcut to get a value quick from the db
@@ -181,4 +188,8 @@ bool DatabaseManager::emailExists(const std::string &email){
         std::cerr << "Email Check Verification Error: " << e.what() << std::endl;
         return false;
     }
+}
+
+void DatabaseManager::resetDatabase() {
+    db.exec("DROW TABLE IF EXISTS users");
 }
