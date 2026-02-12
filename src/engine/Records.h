@@ -36,13 +36,26 @@ enum class JobStage {
     DONE
 };
 
-// ----------- User -----------
+// ----------- Shared time structs (DB + services can reuse) -----------
+struct TimeSlot {
+    std::string start; // ISO datetime
+    std::string end;   // ISO datetime
+};
+
+struct DateRange {
+    std::string start; // ISO datetime
+    std::string end;   // ISO datetime
+};
+
+// ----------- DB Records + Updates -----------
+
+// User
 struct UserRecord {
     UserId id{};
     std::string email;
     std::string passwordHash;
     UserRole role{ UserRole::CUSTOMER };
-    std::string createdAt; // ISO string for simplicity
+    std::string createdAt; // ISO string
 };
 
 struct UserUpdate {
@@ -50,7 +63,7 @@ struct UserUpdate {
     std::optional<UserRole> role;
 };
 
-// ----------- Vehicle -----------
+// Vehicle
 struct VehicleRecord {
     VehicleId id{};
     UserId ownerUserId{};
@@ -69,14 +82,14 @@ struct VehicleUpdate {
     std::optional<int> mileage;
 };
 
-// ----------- Symptom Form -----------
+// Symptom Form
 struct SymptomFormRecord {
     SymptomFormId id{};
     UserId customerId{};
     VehicleId vehicleId{};
     std::string description;
-    int severity{ 0 };        // simple scale 1–5
-    std::string createdAt;
+    int severity{ 0 }; // 1–5
+    std::string createdAt; // ISO datetime
 };
 
 struct SymptomFormUpdate {
@@ -84,14 +97,14 @@ struct SymptomFormUpdate {
     std::optional<int> severity;
 };
 
-// ----------- Mechanic -----------
+// Mechanic
 struct MechanicRecord {
     MechanicId id{};
     UserId userId{};
     std::string displayName;
     std::string shopName;
     double hourlyRate{ 0.0 };
-    std::vector<std::string> specialties; // simple tags (e.g., "BRAKES", "ENGINE")
+    std::vector<std::string> specialties; // tags like "BRAKES", "ENGINE"
 };
 
 struct MechanicUpdate {
@@ -101,18 +114,7 @@ struct MechanicUpdate {
     std::optional<std::vector<std::string>> specialties;
 };
 
-// ----------- Availability -----------
-struct TimeSlot {
-    std::string start; // ISO datetime
-    std::string end;   // ISO datetime
-};
-
-struct DateRange {
-    std::string start;
-    std::string end;
-};
-
-// ----------- Appointment -----------
+// Appointment
 struct AppointmentRecord {
     AppointmentId id{};
     UserId customerId{};
@@ -123,7 +125,7 @@ struct AppointmentRecord {
     std::string note;
 };
 
-// ----------- Job -----------
+// Job
 struct JobRecord {
     JobId id{};
     AppointmentId appointmentId{};
@@ -132,21 +134,21 @@ struct JobRecord {
     JobStage stage{ JobStage::RECEIVED };
     int percentComplete{ 0 }; // 0–100
     std::string lastNote;
-    std::string updatedAt;
+    std::string updatedAt; // ISO datetime
 };
 
-// ----------- Review -----------
+// Review
 struct ReviewRecord {
     ReviewId id{};
     JobId jobId{};
     UserId customerId{};
     MechanicId mechanicId{};
-    int rating{ 0 };          // 1–5
+    int rating{ 0 }; // 1–5
     std::string comment;
-    std::string createdAt;
+    std::string createdAt; // ISO datetime
 };
 
-// ----------- Search / Filters -----------
+// ----------- Filters (DB query inputs) -----------
 struct MechanicSearchFilter {
     std::optional<std::string> specialty;
     std::optional<double> maxDistanceKm; // can be stubbed in MVP
