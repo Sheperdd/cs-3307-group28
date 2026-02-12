@@ -116,13 +116,13 @@ handle_users(const http::request<http::string_body> &req,
         catch (...)
         {
             co_return make_error(http::status::bad_request,
-                                "Invalid JSON body", ver, ka);
+                                 "Invalid JSON body", ver, ka);
         }
 
         if (!body.contains("name") || !body.contains("email") || !body.contains("password"))
         {
             co_return make_error(http::status::bad_request,
-                                "Missing required fields: name, email, password", ver, ka);
+                                 "Missing required fields: name, email, password", ver, ka);
         }
 
         std::string name = body["name"];
@@ -143,10 +143,10 @@ handle_users(const http::request<http::string_body> &req,
 
         if (exists)
             co_return make_error(http::status::conflict,
-                                "Email already exists", ver, ka);
+                                 "Email already exists", ver, ka);
         if (!added)
             co_return make_error(http::status::internal_server_error,
-                                "Failed to create user", ver, ka);
+                                 "Failed to create user", ver, ka);
 
         co_return make_json_response(http::status::created,
                                      json{{"message", "User created"}}, ver, ka);
@@ -158,7 +158,7 @@ handle_users(const http::request<http::string_body> &req,
         int id = parse_int(parts[1]);
         if (id < 0)
             co_return make_error(http::status::bad_request,
-                                "Invalid user ID", ver, ka);
+                                 "Invalid user ID", ver, ka);
 
         // GET /users/{id}
         if (method == http::verb::get)
@@ -173,7 +173,7 @@ handle_users(const http::request<http::string_body> &req,
 
             if (user.is_null())
                 co_return make_error(http::status::not_found,
-                                    "User not found", ver, ka);
+                                     "User not found", ver, ka);
 
             co_return make_json_response(http::status::ok, user, ver, ka);
         }
@@ -189,13 +189,13 @@ handle_users(const http::request<http::string_body> &req,
             catch (...)
             {
                 co_return make_error(http::status::bad_request,
-                                    "Invalid JSON body", ver, ka);
+                                     "Invalid JSON body", ver, ka);
             }
 
             if (!body.contains("name") || !body.contains("password"))
             {
                 co_return make_error(http::status::bad_request,
-                                    "Missing required fields: name, password", ver, ka);
+                                     "Missing required fields: name, password", ver, ka);
             }
 
             std::string name = body["name"];
@@ -211,7 +211,7 @@ handle_users(const http::request<http::string_body> &req,
 
             if (!ok)
                 co_return make_error(http::status::internal_server_error,
-                                    "Failed to update user", ver, ka);
+                                     "Failed to update user", ver, ka);
 
             co_return make_json_response(http::status::ok,
                                          json{{"message", "User updated"}}, ver, ka);
@@ -230,7 +230,7 @@ handle_users(const http::request<http::string_body> &req,
 
             if (!ok)
                 co_return make_error(http::status::internal_server_error,
-                                    "Failed to delete user", ver, ka);
+                                     "Failed to delete user", ver, ka);
 
             co_return make_json_response(http::status::ok,
                                          json{{"message", "User deleted"}}, ver, ka);
