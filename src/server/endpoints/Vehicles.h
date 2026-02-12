@@ -2,7 +2,7 @@
 
 #include "EndpointHandler.h"
 
-/// @brief Handles requests to /vehicles and /vehicles/{id}.
+/// @brief Handles requests to /vehicles, /vehicles/{id}, and related vehicle endpoints.
 class VehiclesHandler : public EndpointHandler
 {
 public:
