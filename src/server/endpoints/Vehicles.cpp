@@ -21,10 +21,12 @@ VehiclesHandler::handle(const http::request<http::string_body> &req,
                                          "Invalid Vehicle ID", req.version(), req.keep_alive());
       }
 
-      // get vehicle info from database
-      json vehicleInfo = db.
 
-                         if (vehicleInfo.contains("error")) // TODO: make sure that when theres an error in getting the info from db, that it will contain error. Could be something like NULL. Talk with aaron when theyre done
+
+      // get vehicle info from database
+      json vehicleInfo = json{{ "id", vehicleId}};
+
+      if (vehicleInfo.contains("error")) // TODO: make sure that when theres an error in getting the info from db, that it will contain error. Could be something like NULL. Talk with aaron when theyre done
       {
         co_return http_utils::make_error(http::status::not_found,
                                          vehicleInfo["error"], req.version(), req.keep_alive());
@@ -47,15 +49,35 @@ VehiclesHandler::handle(const http::request<http::string_body> &req,
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid JSON body", req.version(), req.keep_alive());
       }
+
+      // TODO: Update vehicle in database
+      // Example: db.updateVehicle(vehicleId, body);
+
+      co_return http_utils::make_json_response(http::status::ok,
+                                               json{{"message", "Vehicle updated"}},
+                                               req.version(), req.keep_alive());
     }
 
     // DELETE /vehicles/{id}
+    if (req.method() == http::verb::delete_)
+    {
+      int vehicleId = http_utils::parse_int(path_parts[1]);
+      // TODO: Delete vehicle from database
+
+      co_return http_utils::make_json_response(http::status::ok,
+                                               json{{"message", "Vehicle deleted"}},
+                                               req.version(), req.keep_alive());
+    }
   }
 
   if (path_parts.size() == 3)
   {
     // GET /user/{userId}/vehicles
-
     // POST /user/{userId}/vehicles
+    // TODO: Implement user vehicle endpoints
   }
+
+  // If no route matched, return 404
+  co_return http_utils::make_error(http::status::not_found,
+                                   "Endpoint not found", req.version(), req.keep_alive());
 }
