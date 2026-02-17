@@ -22,7 +22,9 @@ enum class UserRole {
 
 enum class AppointmentStatus {
     REQUESTED,
+    CONFIRMED,
     SCHEDULED,
+    IN_PROGRES,
     CANCELLED,
     COMPLETED
 };
@@ -52,10 +54,12 @@ struct DateRange {
 // User
 struct UserRecord {
     UserId id{};
+    std::string name;
     std::string email;
     std::string passwordHash;
     UserRole role{ UserRole::CUSTOMER };
     std::string createdAt; // ISO string
+    int phone;
 };
 
 struct UserUpdate {
@@ -123,6 +127,11 @@ struct AppointmentRecord {
     std::string scheduledAt; // ISO datetime
     AppointmentStatus status{ AppointmentStatus::REQUESTED };
     std::string note;
+    AppointmentId appointmentId{};
+    VehicleId vehicleId{};
+    std::string createdAt;
+    std::string symptomForm;
+    SymptomFormId symptomFormId;
 };
 
 // Job
@@ -131,10 +140,15 @@ struct JobRecord {
     AppointmentId appointmentId{};
     MechanicId mechanicId{};
     UserId customerId{};
+    VehicleId vehicleId;
     JobStage stage{ JobStage::RECEIVED };
     int percentComplete{ 0 }; // 0�100
     std::string lastNote;
     std::string updatedAt; // ISO datetime
+    JobStage currentStage;
+    std::string startedAt;
+    std::string completedAt;
+    std::string completionNote;
 };
 
 // Review

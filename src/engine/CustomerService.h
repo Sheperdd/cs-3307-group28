@@ -20,6 +20,7 @@ public:
     virtual ~CustomerValidator() = default;
     virtual bool validateCustomerProfile(const CustomerProfileCreate& profile) = 0;
     virtual bool validateVehicle(const VehicleCreate& vehicle) = 0;
+    virtual bool validateVehicle(const VehicleCreate& vehicle) = 0;
     virtual bool validateSymptomForm(const SymptomFormCreate& form) = 0;
     virtual bool validateReview(const ReviewCreate& review) = 0;
 };
