@@ -319,6 +319,46 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
     }
 }
 
+// -------------------- Vehicle CRUD --------------------
+// TODO: Implement createVehicle, getVehicleById, listVehiclesForUser, updateVehicle, deleteVehicle
+
+VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord &vehicle)
+{
+    // TODO: implement
+    (void)ownerUserId;
+    (void)vehicle;
+    return -1; // null-equivalent for ID
+}
+
+std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId)
+{
+    // TODO: implement
+    (void)vehicleId;
+    return std::nullopt; // null-equivalent
+}
+
+std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUserId)
+{
+    // TODO: implement
+    (void)ownerUserId;
+    return {}; // empty/null-equivalent
+}
+
+bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &updates)
+{
+    // TODO: implement
+    (void)vehicleId;
+    (void)updates;
+    return false; // null-equivalent
+}
+
+bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
+{
+    // TODO: implement
+    (void)vehicleId;
+    return false; // null-equivalent
+}
+
 // -------------------- Mechanic helpers --------------------
 nlohmann::json DatabaseManager::userRecordToJson(const UserRecord &u) const
 {
