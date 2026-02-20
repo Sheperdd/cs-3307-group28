@@ -24,7 +24,7 @@ enum class AppointmentStatus {
     REQUESTED,
     CONFIRMED,
     SCHEDULED,
-    IN_PROGRES,
+    IN_PROGRESS,
     CANCELLED,
     COMPLETED
 };
@@ -142,7 +142,7 @@ struct JobRecord {
     UserId customerId{};
     VehicleId vehicleId;
     JobStage stage{ JobStage::RECEIVED };
-    int percentComplete{ 0 }; // 0�100
+    int percentComplete{ 0 }; // 0–100
     std::string lastNote;
     std::string updatedAt; // ISO datetime
     JobStage currentStage;

@@ -24,7 +24,7 @@ VehiclesHandler::handle(const http::request<http::string_body> &req,
         {
         case http::verb::get:
             co_return co_await getVehicle(id, ver, ka, db, pool);
-        case http::verb::put:
+        case http::verb::patch:
             co_return co_await updateVehicle(id, req, ver, ka, db, pool);
         case http::verb::delete_:
             co_return co_await deleteVehicle(id, ver, ka, db, pool);
@@ -84,7 +84,7 @@ VehiclesHandler::getVehicle(VehicleId id, unsigned ver, bool ka,
                                              vehicleInfo, ver, ka);
 }
 
-// PUT /vehicles/{id}
+// PATCH /vehicles/{id}
 net::awaitable<http::response<http::string_body>>
 VehiclesHandler::updateVehicle(VehicleId id,
                                const http::request<http::string_body> &req,

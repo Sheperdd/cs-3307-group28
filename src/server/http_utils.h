@@ -41,10 +41,10 @@ namespace http_utils
     return parts;
   }
 
-  /// Try to parse a string as an int.  Returns -1 on failure.
-  inline int parse_int(const std::string &s)
+  /// Try to parse a string as an int64_t (matching id types in DB). Returns -1 on failure.
+  inline int64_t parse_int(const std::string &s)
   {
-    int val = -1;
+    int64_t val = -1;
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
     if (ec != std::errc{} || ptr != s.data() + s.size())
       return -1;

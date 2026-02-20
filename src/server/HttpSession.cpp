@@ -72,6 +72,7 @@ HttpSession::route_request(const http::request<http::string_body> &req)
 
 net::awaitable<void> HttpSession::run()
 {
+    auto self = shared_from_this();   // prevent destruction while coroutine is active
     try
     {
         for (;;)

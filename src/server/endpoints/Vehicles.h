@@ -24,7 +24,7 @@ private:
   getVehicle(VehicleId id, unsigned ver, bool ka,
              DatabaseManager &db, net::thread_pool &pool);
 
-  // PUT /vehicles/{id}
+  // PATCH /vehicles/{id}
   net::awaitable<http::response<http::string_body>>
   updateVehicle(VehicleId id, const http::request<http::string_body> &req,
                 unsigned ver, bool ka,
@@ -35,12 +35,12 @@ private:
   deleteVehicle(VehicleId id, unsigned ver, bool ka,
                 DatabaseManager &db, net::thread_pool &pool);
 
-  // GET /vehicles/owner/{userId}
+  // GET /user/{userId}/vehicles
   net::awaitable<http::response<http::string_body>>
   listVehiclesForUser(UserId userId, unsigned ver, bool ka,
                       DatabaseManager &db, net::thread_pool &pool);
 
-  // POST /vehicles/owner/{userId}
+  // POST /user/{userId}/vehicles
   net::awaitable<http::response<http::string_body>>
   createVehicle(UserId userId, const http::request<http::string_body> &req,
                 unsigned ver, bool ka,

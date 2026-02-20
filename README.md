@@ -45,15 +45,23 @@ From the repo root:
 After building:
 - `ctest --test-dir build --output-on-failure`
 
-If CTest doesn�t find tests in your configuration, you can also run the test binary directly:
+If CTest doesn't find tests in your configuration, you can also run the test binary directly:
 - `./build/tests/UnitTests` (path may vary by generator/config)
 
 ---
 
 ## Visual Studio 2022 + WSL workflow (Windows)
-If you�re using Visual Studio with a WSL toolchain:
+If you're using Visual Studio with a WSL toolchain:
 - Open the folder as a CMake project.
 - Ensure the selected kit/toolchain targets WSL.
 - Build with the default CMake targets (Ninja is typical for VS CMake projects).
 
 ---
+
+## Extra Working Notes
+- The database is always accessed through DatabaseManager, but since SQLite is blocking (can only do one call at a time), every DB call is offloaded to a net::thread_pool via net::co_spawn when working on the server.
+
+## Potential Errors
+- db.updateVehicle() and db.deleteVehicle() return bool. If they return false because the ID doesn't exist (vs. a real DB error), the client still gets a 500 Internal Server Error instead of a 404 Not Found. The DB API doesn't distinguish these two cases.
+- No validation on VehicleRecord fields after deserialization
+After parsing, there is no validation (like if the year is reasonable, vin is non-empty, mileage is non-negative). Garbage data can be written directly to the db.

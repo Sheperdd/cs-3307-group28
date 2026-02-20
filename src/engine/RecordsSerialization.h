@@ -53,6 +53,12 @@ inline void to_json(json &j, AppointmentStatus s)
   case AppointmentStatus::COMPLETED:
     j = "COMPLETED";
     break;
+  case AppointmentStatus::CONFIRMED:
+    j = "CONFIRMED";
+    break;
+  case AppointmentStatus::IN_PROGRESS:
+    j = "IN_PROGRESS";
+    break;
   }
 }
 
