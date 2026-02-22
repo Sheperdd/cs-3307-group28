@@ -324,6 +324,38 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
 
 VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord &vehicle)
 {
+    if (ownerUserId <= 0) {
+        throw std::invalid_argument("createVehicle: invalid ownerUserId");
+    }
+    if (vehicle.vin.empty()) {
+        throw std::invalid_argument("createVehicle: VIN is required");
+    }
+    if (vehicle.model.empty()) {
+        throw std::invalid_argument("createVehicle: model is required");
+    }
+
+    try {
+        SQLite::Statement stmt(
+            db,
+            "INSERT INTO vehicles (ownerUserId, vin, make, model, year, createdAt) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))"
+        );
+
+        stmt.bind(1, static_cast<long long>(ownerUserId));
+        stmt.bind(2, vehicle.vin);
+        stmt.bind(3, vehicle.make);
+        stmt.bind(4, vehicle.model);
+
+        if (vehicle.year <= 0) stmt.bind(5);
+        else stmt.bind(5, vehicle.year);
+
+        stmt.exec();
+        return static_cast<VehicleId>(db.getLastInsertRowid());
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("createVehicle failed: ") + e.what());
+    }
+}
     // TODO: implement
     (void)ownerUserId;
     (void)vehicle;
@@ -332,6 +364,35 @@ VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord
 
 std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId)
 {
+    if (vehicleId <= 0) return std::nullopt;
+
+    try {
+        SQLite::Statement stmt(
+            db,
+            "SELECT id, ownerUserId, vin, make, model, year "
+            "FROM vehicles WHERE id = ?"
+        );
+
+        stmt.bind(1, static_cast<long long>(vehicleId));
+
+        if (!stmt.executeStep()) {
+            return std::nullopt;
+        }
+
+        VehicleRecord rec{};
+        rec.id = static_cast<VehicleId>(stmt.getColumn(0).getInt64());
+        rec.ownerUserId = static_cast<UserId>(stmt.getColumn(1).getInt64());
+        rec.vin = stmt.getColumn(2).getText();
+        rec.make = stmt.getColumn(3).getText();
+        rec.model = stmt.getColumn(4).getText();
+        rec.year = stmt.getColumn(5).isNull() ? 0 : stmt.getColumn(5).getInt();
+
+        return rec;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("getVehicleById failed: ") + e.what());
+    }
+}
     // TODO: implement
     (void)vehicleId;
     return std::nullopt; // null-equivalent
@@ -339,6 +400,36 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
 
 std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUserId)
 {
+    std::vector<VehicleRecord> results;
+
+    if (ownerUserId <= 0) return results;
+
+    try {
+        SQLite::Statement stmt(
+            db,
+            "SELECT id, ownerUserId, vin, make, model, year "
+            "FROM vehicles WHERE ownerUserId = ?"
+        );
+
+        stmt.bind(1, static_cast<long long>(ownerUserId));
+
+        while (stmt.executeStep()) {
+            VehicleRecord rec{};
+            rec.id = static_cast<VehicleId>(stmt.getColumn(0).getInt64());
+            rec.ownerUserId = static_cast<UserId>(stmt.getColumn(1).getInt64());
+            rec.vin = stmt.getColumn(2).getText();
+            rec.make = stmt.getColumn(3).getText();
+            rec.model = stmt.getColumn(4).getText();
+            rec.year = stmt.getColumn(5).isNull() ? 0 : stmt.getColumn(5).getInt();
+
+            results.push_back(std::move(rec));
+        }
+
+        return results;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("listVehiclesForUser failed: ") + e.what());
+    }
     // TODO: implement
     (void)ownerUserId;
     return {}; // empty/null-equivalent
@@ -346,6 +437,38 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
 
 bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &updates)
 {
+    if (vehicleId <= 0) return false;
+
+    std::vector<std::string> sets;
+    if (updates.make.has_value())  sets.emplace_back("make = ?");
+    if (updates.model.has_value()) sets.emplace_back("model = ?");
+    if (updates.year.has_value())  sets.emplace_back("year = ?");
+
+    if (sets.empty()) return true; // nothing to update
+
+    std::string sql = "UPDATE vehicles SET ";
+    for (size_t i = 0; i < sets.size(); ++i) {
+        sql += sets[i];
+        if (i + 1 < sets.size()) sql += ", ";
+    }
+    sql += " WHERE id = ?";
+
+    try {
+        SQLite::Statement stmt(db, sql);
+
+        int idx = 1;
+        if (updates.make.has_value())  stmt.bind(idx++, updates.make.value());
+        if (updates.model.has_value()) stmt.bind(idx++, updates.model.value());
+        if (updates.year.has_value())  stmt.bind(idx++, updates.year.value());
+
+        stmt.bind(idx, static_cast<long long>(vehicleId));
+
+        return stmt.exec() > 0;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("updateVehicle failed: ") + e.what());
+    }
+}
     // TODO: implement
     (void)vehicleId;
     (void)updates;
@@ -354,6 +477,20 @@ bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
 
 bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
 {
+    if (vehicleId <= 0) return false;
+
+    try {
+        SQLite::Statement stmt(
+            db,
+            "DELETE FROM vehicles WHERE id = ?"
+        );
+
+        stmt.bind(1, static_cast<long long>(vehicleId));
+        return stmt.exec() > 0;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("deleteVehicle failed: ") + e.what());
+    }
     // TODO: implement
     (void)vehicleId;
     return false; // null-equivalent
