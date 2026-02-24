@@ -4,56 +4,64 @@
 #include <optional>
 #include <cstdint>
 
-#include "MechanicService.h"
-#include "Records.h" // IDs, enums, TimeSlot, DateRange, AppointmentStatus, JobStage, UserRole, etc.
+#include "Records.h"  // IDs, enums, TimeSlot, DateRange, Record/Update structs
 
-// ------------------ Extra Shared Types ------------------
-using SubscriptionId = int64_t;  // can change later if you want UUID strings
-using SessionId = int64_t;       // keep simple for MVP (can switch to UUID string later)
+/*
+ * DTO.h — Data Transfer Objects (server ↔ frontend)
+ *
+ * One DTO per table, plus auth helpers. These are the shapes sent over HTTP.
+ * DB-layer Record/Update structs live in Records.h — don't duplicate them here.
+ *
+ * Tables (7):  Users, Vehicles, SymptomForms, Mechanics, Appointments, Jobs, Reviews
+ */
 
-// If you want discovery filters later, keep it minimal for now
-struct DiscoveryFilter {
-    std::optional<std::string> specialty;
-    std::optional<double> maxDistanceKm;  // stub OK MVP
-};
+// ========================= Shared ID aliases =========================
+using SubscriptionId = int64_t;
+using SessionId      = int64_t;
 
-// ------------------ Auth DTOs ------------------
+// ========================= Auth (server → frontend) =========================
+// Returned on login; frontend stores for subsequent authenticated requests.
 struct Session {
-    SessionId sessionId{};
-    UserId userId{};
-    UserRole role{ UserRole::CUSTOMER };
+    SessionId   sessionId{};
+    UserId      userId{};
+    UserRole    role{ UserRole::CUSTOMER };
     std::string createdAt;   // ISO datetime
-    std::string expiresAt;   // ISO datetime (optional usage)
+    std::string expiresAt;   // ISO datetime
 };
 
+// Wrapper returned by the login endpoint.
 struct AuthResult {
     bool success{ false };
-    std::string message;  // "ok", "invalid credentials", "role not allowed"
-    std::optional<Session> session;
+    std::string message;               // "ok", "invalid credentials", etc.
+    std::optional<Session> session;    // present only on success
 };
 
-// ------------------ Customer Profile DTOs ------------------
-struct CustomerProfileCreate {
+// ========================= 1. Users =========================
+// POST /users  — frontend → server
+struct UserCreate {
     std::string fullName;
     std::string email;
     std::string phone;
 };
 
-struct CustomerProfile {
-    UserId customerId{};
+// GET /users, GET /users/{id}  — server → frontend
+struct UserDTO {
+    UserId      userId{};
     std::string fullName;
     std::string email;
     std::string phone;
     std::string createdAt;  // ISO datetime
 };
 
-struct CustomerProfileUpdate {
+// PATCH /users/{id}  — frontend → server (all fields optional)
+struct UserProfileUpdate {
     std::optional<std::string> fullName;
     std::optional<std::string> email;
     std::optional<std::string> phone;
 };
 
-// ------------------ Vehicle DTOs (Service-facing) ------------------
+// ========================= 2. Vehicles =========================
+// POST /users/{userId}/vehicles  — frontend → server
 struct VehicleCreate {
     std::string vin;
     std::string make;
@@ -62,79 +70,65 @@ struct VehicleCreate {
     int mileage{ 0 };
 };
 
-struct VehicleSummary {
-    VehicleId vehicleId{};
+// GET /vehicles/{id}, GET /users/{userId}/vehicles  — server → frontend
+struct VehicleDTO {
+    VehicleId   vehicleId{};
+    UserId      ownerId{};
+    std::string vin;
     std::string make;
     std::string model;
     int year{ 0 };
+    int mileage{ 0 };
 };
 
-// ------------------ Symptom Form DTOs ------------------
+// ========================= 3. Symptom Forms =========================
+// POST /users/{userId}/symptoms  — frontend → server
 struct SymptomFormCreate {
     std::string description;
     int severity{ 0 };  // 1-5
 };
 
-struct SymptomFormSummary {
+// GET /symptoms/{id}, GET /users/{userId}/symptoms  — server → frontend
+struct SymptomFormDTO {
     SymptomFormId formId{};
-    VehicleId vehicleId{};
-    std::string shortDescription;
-    int severity{ 0 };
-    std::string createdAt;  // ISO datetime
+    UserId        customerId{};
+    VehicleId     vehicleId{};
+    std::string   description;
+    int           severity{ 0 };
+    std::string   createdAt;  // ISO datetime
 };
 
-struct SymptomFormDetails {
-    SymptomFormId formId{};
-    UserId customerId{};
-    VehicleId vehicleId{};
-    std::string description;
-    int severity{ 0 };
-    std::string createdAt;  // ISO datetime
-};
-
-// ------------------ Discovery / Mechanic Views ------------------
-struct MechanicProfileView {
-    MechanicId mechanicId{};
+// ========================= 4. Mechanics =========================
+// POST /mechanics  — frontend → server
+struct MechanicCreate {
     std::string displayName;
     std::string shopName;
     double hourlyRate{ 0.0 };
     std::vector<std::string> specialties;
-    double averageRating{ 0.0 };
-    int reviewCount{ 0 };
-    std::optional<double> distanceKm;  // stub OK MVP
 };
 
+// GET /mechanics/{id}, GET /mechanics  — server → frontend
+// Also used for discovery results and profile views.
+struct MechanicDTO {
+    MechanicId  mechanicId{};
+    UserId      userId{};
+    std::string displayName;
+    std::string shopName;
+    double      hourlyRate{ 0.0 };
+    std::vector<std::string> specialties;
+    double      averageRating{ 0.0 };  // computed from reviews
+    int         reviewCount{ 0 };      // computed from reviews
+};
+// Note: for PATCH use MechanicUpdate from Records.h (same fields, all optional).
+
+// Discovery helper — ranked match result from the matching engine.
 struct MechanicMatch {
     MechanicId mechanicId{};
     double matchScore{ 0.0 };
     std::vector<std::string> reasons;
 };
 
-// ------------------ Mechanic Profile (MechanicService-facing) ------------------
-struct MechanicProfileCreate {
-    std::string displayName;
-    std::string shopName;
-    double hourlyRate{ 0.0 };
-    std::vector<std::string> specialties;
-};
-
-struct MechanicProfile {
-    MechanicId mechanicId{};
-    UserId userId{};
-    std::string displayName;
-    std::string shopName;
-    double hourlyRate{ 0.0 };
-    std::vector<std::string> specialties;
-};
-
-struct MechanicProfileUpdate {
-    std::optional<std::string> displayName;
-    std::optional<std::string> shopName;
-    std::optional<double> hourlyRate;
-    std::optional<std::vector<std::string>> specialties;
-};
-
-// ------------------ Pricing / Estimate ------------------
+// Estimate returned by GET /mechanics/{id}/estimate?formId=…
 struct PriceEstimate {
     int laborCost{};
     int partsCost{};
@@ -143,103 +137,66 @@ struct PriceEstimate {
     std::string note;
 };
 
-// ------------------ Appointments ------------------
-struct AppointmentRequestView {
-    AppointmentId appointmentId{};
-    UserId customerId{};
-    SymptomFormId formId{};
-    std::string customerName;
-    std::string customerEmail;
-    std::string requestedAt;  // ISO datetime
-    std::string chosenSlot;
-    std::string summary;
-    VehicleId vehicleId{};
-    std::string make;
-    std::string model;
-    int year{};
-    std::string symptoms;
-    std::string urgency;
-    std::string notes;
-};
-
-struct AppointmentSummary {
-    AppointmentId appointmentId{};
-    MechanicId mechanicId{};
-    std::string customerName;
-    std::string scheduledAt;  // ISO datetime
+// ========================= 5. Appointments =========================
+// GET /appointments/{id}, GET /users/{userId}/appointments,
+// GET /mechanics/{mechanicId}/appointments  — server → frontend
+// One struct covers list items, detail views, and incoming request views.
+struct AppointmentDTO {
+    AppointmentId     appointmentId{};
+    UserId            customerId{};
+    MechanicId        mechanicId{};
+    SymptomFormId     formId{};
+    std::string       customerName;
+    std::string       customerEmail;
+    std::string       customerPhone;
+    std::string       mechanicName;
+    std::string       scheduledAt;        // ISO datetime
     AppointmentStatus status{ AppointmentStatus::REQUESTED };
-    std::string vehicleDescription;
+    std::string       note;
+    std::string       createdAt;          // ISO datetime
+    // Flattened vehicle info
+    VehicleId         vehicleId{};
+    std::string       vehicleDescription; // e.g. "2020 Toyota Camry"
+    // Flattened symptom info
+    std::string       symptoms;
+    int               severity{ 0 };
 };
 
-struct AppointmentDetails {
-    AppointmentId appointmentId{};
-    UserId customerId{};
-    std::string customerName;
-    MechanicId mechanicId{};
-    std::string mechanicName;
-    SymptomFormId formId{};
-    std::string scheduledAt;  // ISO datetime
-    int durationMinutes{ 0 };
-    AppointmentStatus status{ AppointmentStatus::REQUESTED };
-    std::string note;
-    std::string createdAt;
-    std::string customerPhone;
-    std::optional<VehicleSummary> vehicle;
-    std::optional<SymptomFormRecord>::value_type symptomForm;
+// ========================= 6. Jobs =========================
+// GET /jobs/{id}, GET /mechanics/{mechanicId}/jobs  — server → frontend
+// One struct covers job status, card view, and detail view.
+struct JobDTO {
+    JobId             jobId{};
+    AppointmentId     appointmentId{};
+    UserId            customerId{};
+    MechanicId        mechanicId{};
+    JobStage          currentStage{ JobStage::RECEIVED };
+    int               percentComplete{ 0 };
+    std::string       lastNote;
+    std::string       updatedAt;          // ISO datetime
+    std::string       startedAt;          // ISO datetime
+    std::string       completedAt;        // ISO datetime
+    std::string       completionNote;
+    std::string       customerName;
+    std::string       customerEmail;
+    std::string       vehicleDescription;
+    bool              isBlocked{ false };
 };
 
-// ------------------ Jobs ------------------
-struct JobStatusView {
-    JobId jobId{};
-    JobStage stage{ JobStage::RECEIVED };
-    int percentComplete{ 0 };
-    std::string lastNote;
-    std::string updatedAt;  // ISO datetime
-};
-
-struct JobCardView {
-    JobId jobId{};
-    UserId customerId{};
-    std::string customerName;
-    JobStage stage{ JobStage::RECEIVED };
-    int percentComplete{ 0 };
-    std::string updatedAt;  // ISO datetime
-    std::string vehicleDescription;
-    JobStage currentStage;
-    std::vector startedAt;
-    bool isBlocked;
-};
-
-struct JobDetailsView {
-    JobId jobId{};
-    AppointmentId appointmentId{};
-    UserId customerId{};
-    MechanicId mechanicId{};
-    JobStage stage{ JobStage::RECEIVED };
-    int percentComplete{ 0 };
-    std::string lastNote;
-    std::string updatedAt;  // ISO datetime
-    JobStage currentStage;
-    std::string startedAt;
-    std::string completedAt;
-    std::string completionNote;
-    std::string customerName;
-    std::string customerEmail;
-    std::optional<VehicleRecord>::value_type vehicle;
-};
-
-// ------------------ Reviews ------------------
+// ========================= 7. Reviews =========================
+// POST /reviews  — frontend → server
 struct ReviewCreate {
     int rating{ 0 };  // 1-5
     std::string comment;
 };
 
-struct ReviewSummary {
-    ReviewId reviewId{};
-    MechanicId mechanicId{};
-    UserId customerId{};
-    int rating{ 0 };
+// GET /reviews, GET /mechanics/{id}/reviews  — server → frontend
+struct ReviewDTO {
+    ReviewId    reviewId{};
+    MechanicId  mechanicId{};
+    UserId      customerId{};
+    int         rating{ 0 };
     std::string comment;
-    std::string createdAt;  // ISO datetime
-    int customerName;
+    std::string createdAt;      // ISO datetime
+    std::string customerName;   // joined from users table
 };

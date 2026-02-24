@@ -22,32 +22,32 @@ public:
     explicit MechanicService(DatabaseManager& db);
     ~MechanicService();
 
-    MechanicId createMechanicProfile(UserId userId, const MechanicProfileCreate& profile);
-    MechanicProfile getMechanicProfile(MechanicId mechanicId);
+    MechanicId createMechanicProfile(UserId userId, const MechanicCreate& profile);
+    MechanicDTO getMechanicProfile(MechanicId mechanicId);
 
-    bool updateMechanicProfile(MechanicId mechanicId, MechanicProfileUpdate updates);
-    std::vector <AppointmentRequestView> listIncomminRequests(MechanicId mechanicId);
-    bool AcceptAppointment (AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
+    bool updateMechanicProfile(MechanicId mechanicId, MechanicUpdate updates);
+    std::vector<AppointmentDTO> listIncomingRequests(MechanicId mechanicId);
+    bool AcceptAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
     bool declineAppointment(AppointmentId appointmentId, std::string reason);
     bool RescheduleAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
 
-    std::vector <AppointmentSummary> listAppointments(MechanicId mechanicId, DataRange dateRange);
-    AppointmentDetails getAppointmentDetails(AppointmentId appointmentId);
+    std::vector<AppointmentDTO> listAppointments(MechanicId mechanicId, DateRange dateRange);
+    AppointmentDTO getAppointmentDetails(AppointmentId appointmentId);
     JobId startJobFromAppointment(MechanicId mechanicId, AppointmentId appointmentId);
-    List <JobCardView> listOpenJobs(MechanicId mechanicId);
-    JobDetailsView getJob(JobId jobId);
+    std::vector<JobDTO> listOpenJobs(MechanicId mechanicId);
+    JobDTO getJob(JobId jobId);
 
     bool updateJobStage(MechanicId mechanicId, JobId jobId, JobStage stage, int percentCompleted, std::string note);
-    bool markJobBlocked(MechanicId, JobId jobId, std::string reasoning);
+    bool markJobBlocked(MechanicId mechanicId, JobId jobId, std::string reasoning);
     bool markJobComplete(MechanicId mechanicId, JobId jobId, std::string completionSum);
 
-    std::vector<ReviewSummary> listMyReviews(MechanicId mechanicId);
+    std::vector<ReviewDTO> listMyReviews(MechanicId mechanicId);
 
     void validateMechanicOwnAppointment(MechanicId mechanicId, AppointmentId appointmentId);
     void validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId);
-    void publicJobUpdate(JobId jobId);
-    bool slotConflicts(MechanicId mechanicId, TimeSlot timeSlot);
-    std::vector <JobStage> buildDefaultStages();
+    void publishJobUpdate(JobId jobId);
+    bool slotConflicts(MechanicId mechanicId, const TimeSlot& timeSlot);
+    std::vector<JobStage> buildDefaultStages();
 
 };
 

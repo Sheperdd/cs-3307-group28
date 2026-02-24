@@ -7,7 +7,7 @@
 
 MechanicService::MechanicService(DatabaseManager& db) : db(db){}
 
-MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicProfileCreate& profile){
+MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicCreate& profile){
     auto user = db.getUserRecordById(userId);
     if (!user.has_value()){
         throw std::runtime_error("user not found");
@@ -40,7 +40,7 @@ MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicP
     return mechanic -> userId;
 }
 
-MechanicProfile MechanicService::getMechanicProfile(MechanicId mechanicId){
+MechanicDTO MechanicService::getMechanicProfile(MechanicId mechanicId){
     auto mechanic = db.getMechanicByUserId(mechanicId);
 
     if (!mechanic.has_value()){
@@ -58,18 +58,20 @@ MechanicProfile MechanicService::getMechanicProfile(MechanicId mechanicId){
         avgRating= static_cast<double>(totalRating) / reviews.size();
     }
 
-    MechanicProfile profile;
+    MechanicDTO profile;
     profile.mechanicId = mechanic ->userId;
     profile.displayName = mechanic -> displayName;
     profile.userId = mechanic -> userId;
     profile.specialties = mechanic -> specialties;
     profile.hourlyRate= mechanic->hourlyRate;
+    profile.averageRating = avgRating;
+    profile.reviewCount = static_cast<int>(reviews.size());
 
 
     return profile;
 }
 
-bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicProfileUpdate updates){
+bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicUpdate updates){
     auto mechanic = db.getMechanicByUserId(mechanicId);
     if (!mechanic.has_value()){
         throw std::runtime_error("Mechanic profile was not found");
@@ -78,17 +80,21 @@ bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicProfi
     return db.updateMechanicProfile(mechanicId, updates);
 }
 
-std::vector<AppointmentRequestView> MechanicService::listIncomingRequests(MechanicId mechanicId)
+std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mechanicId)
 {
     // Get all appointments for this mechanic with "pending" status
-    auto appointments = db_.listAppointmentsForMechanic(mechanicId);
+    auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
-    std::vector<AppointmentRequestView> requests;
+    std::vector<AppointmentDTO> requests;
     for (const auto& appt : appointments) {
         if (appt.status == AppointmentStatus::REQUESTED) {
-            AppointmentRequestView view;
+            AppointmentDTO view;
             view.appointmentId = appt.appointmentId;
             view.customerId = appt.customerId;
+            view.mechanicId = appt.mechanicId;
+            view.status = appt.status;
+            view.createdAt = appt.createdAt;
+            view.note = appt.note;
 
             // Get customer details
             auto customer = db.getUserRecordById(appt.customerId);
@@ -100,23 +106,18 @@ std::vector<AppointmentRequestView> MechanicService::listIncomingRequests(Mechan
             // Get vehicle details
             auto vehicle = db.getVehicleById(appt.vehicleId);
             if (vehicle.has_value()) {
-                view.vehicleid = vehicle->id;
-                view.make = vehicle->make;
-                view.model = vehicle->model;
-                view.year = vehicle->year;
+                view.vehicleId = vehicle->id;
+                view.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
             }
 
             // Get symptom form
-            if (appt.symptomFormId.has_value()) {
-                auto form = db.getSymptomFormById(appt.symptomFormId.value());
+            if (appt.symptomFormId > 0) {
+                auto form = db.getSymptomFormById(appt.symptomFormId);
                 if (form.has_value()) {
                     view.symptoms = form->description;
-                    view.urgency = form->severity;
+                    view.severity = form->severity;
                 }
             }
-
-            view.requestedAt = appt.createdAt;
-            view.notes = appt.notes;
 
             requests.push_back(view);
         }
@@ -190,67 +191,71 @@ bool MechanicService::RescheduleAppointment(AppointmentId appointmentId, TimeSlo
 }
 
 
-std::vector<AppointmentSummary> MechanicService::listAppointments(MechanicId mechanicId, DataRange dateRanges, VehicleSummary vehicle){
+std::vector<AppointmentDTO> MechanicService::listAppointments(MechanicId mechanicId, DateRange dateRange){
 
     auto appts = db.listAppointmentsForMechanic(mechanicId);
 
 
-    std::vector<AppointmentSummary> sums;
-    for (const auto& appt:appts){
+    std::vector<AppointmentDTO> sums;
+    for (const auto& appt : appts){
         // Filter by date range if scheduledTime falls within range
         // TODO: Implement date filtering based on appt.scheduledTime
 
-        AppointmentSummary summary;
+        AppointmentDTO summary;
         summary.appointmentId = appt.appointmentId;
+        summary.mechanicId = appt.mechanicId;
+        summary.status = appt.status;
+        summary.scheduledAt = appt.scheduledAt;
 
         auto customer = db.getUserRecordById(appt.customerId);
         if (customer.has_value()){
-            summary.vehicleDescription =vehicle.year + " " + vehicle.make + " " + vehicle.model;
+            summary.customerName = customer->name;
         }
 
         auto vehicle = db.getVehicleById(appt.vehicleId);
-        if (!vehicle.has_value()){
-            summary.customerName = customer -> name;
+        if (vehicle.has_value()){
+            summary.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
         }
-
-        summary.scheduledAt = appt.scheduledAt;
-        summary.status = appt.status;
 
         sums.push_back(summary);
     }
     return sums;
 }
 
-AppointmentDetails MechanicService::getAppointmentDetails(AppointmentId appointmentId){
+AppointmentDTO MechanicService::getAppointmentDetails(AppointmentId appointmentId){
     auto appt= db.getAppointmentById(appointmentId);
     if (!appt.has_value()){
         throw std::runtime_error("Appointment was not found");
     }
 
-    AppointmentDetails details;
+    AppointmentDTO details;
     details.appointmentId = appt->appointmentId;
-    details.status = appt ->status;
-    details.scheduledAt = appt -> scheduledAt;
+    details.mechanicId = appt->mechanicId;
+    details.status = appt->status;
+    details.scheduledAt = appt->scheduledAt;
     details.note = appt->note;
     details.createdAt = appt->createdAt;
 
 
     auto customer = db.getUserRecordById(appt->customerId);
     if (customer.has_value()){
-        details.customerName = customer -> name;
-        details.customerId = customer -> id;
-        details.customerPhone = customer -> phone;
+        details.customerName = customer->name;
+        details.customerId = customer->id;
+        details.customerPhone = std::to_string(customer->phone);
+        details.customerEmail = customer->email;
     }
 
-    auto vehicle = db.getVehicleById(appt -> vehicleId);
+    auto vehicle = db.getVehicleById(appt->vehicleId);
     if (vehicle.has_value()){
-        details.vehicle = *vehicle;
+        details.vehicleId = vehicle->id;
+        details.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
     }
 
-    if (appt->symptomForm.has_value()){
-        auto form = db.getSymptomFormById(appt ->symptomFormId);
+    if (appt->symptomFormId > 0){
+        auto form = db.getSymptomFormById(appt->symptomFormId);
         if (form.has_value()){
-            details.symptomForm = *form;
+            details.symptoms = form->description;
+            details.severity = form->severity;
         }
     }
 
@@ -290,14 +295,17 @@ JobId MechanicService::startJobFromAppointment(MechanicId mechanicId, Appointmen
     }
 }
 
-std::vector<JobCardView> MechanicService::listOpenJobs(MechanicId mechanicId)
+std::vector<JobDTO> MechanicService::listOpenJobs(MechanicId mechanicId)
 {
     auto jobs = db.listOpenJobsForMechanic(mechanicId);
 
-    std::vector<JobCardView> cards;
+    std::vector<JobDTO> cards;
     for (const auto& job : jobs) {
-        JobCardView card;
+        JobDTO card;
         card.jobId = job.id;
+        card.customerId = job.customerId;
+        card.mechanicId = job.mechanicId;
+        card.appointmentId = job.appointmentId;
 
         // Get customer info
         auto customer = db.getUserRecordById(job.customerId);
@@ -308,13 +316,13 @@ std::vector<JobCardView> MechanicService::listOpenJobs(MechanicId mechanicId)
         // Get vehicle info
         auto vehicle = db.getVehicleById(job.vehicleId);
         if (vehicle.has_value()) {
-            card.vehicleDescription = vehicle->year + " " + vehicle->make + " " + vehicle->model;
+            card.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
         }
 
         card.currentStage = job.currentStage;
         card.percentComplete = job.percentComplete;
         card.startedAt = job.startedAt;
-        card.isBlocked = (job.currentStage == "blocked");
+        card.isBlocked = false; // TODO: determine from stage
 
         cards.push_back(card);
     }
@@ -322,16 +330,18 @@ std::vector<JobCardView> MechanicService::listOpenJobs(MechanicId mechanicId)
     return cards;
 }
 
-JobDetailsView MechanicService::getJob(JobId jobId)
+JobDTO MechanicService::getJob(JobId jobId)
 {
     auto job = db.getJobById(jobId);
     if (!job.has_value()) {
         throw std::runtime_error("Job not found");
     }
 
-    JobDetailsView details;
+    JobDTO details;
     details.jobId = job->id;
     details.appointmentId = job->appointmentId;
+    details.mechanicId = job->mechanicId;
+    details.customerId = job->customerId;
     details.currentStage = job->currentStage;
     details.percentComplete = job->percentComplete;
     details.startedAt = job->startedAt;
@@ -348,11 +358,8 @@ JobDetailsView MechanicService::getJob(JobId jobId)
     // Get vehicle details
     auto vehicle = db.getVehicleById(job->vehicleId);
     if (vehicle.has_value()) {
-        details.vehicle = *vehicle;
+        details.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
     }
-
-    // Get all job stages/history
-    details.currentStage = job->currentStage;
 
     return details;
 }
@@ -400,20 +407,22 @@ bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const 
 
 // ---------------- Reviews ----------------
 
-std::vector<ReviewSummary> MechanicService::listMyReviews(MechanicId mechanicId)
+std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 {
-    auto reviews = db_.listReviewsForMechanic(mechanicId);
+    auto reviews = db.listReviewsForMechanic(mechanicId);
 
-    std::vector<ReviewSummary> summaries;
+    std::vector<ReviewDTO> summaries;
     for (const auto& review : reviews) {
-        ReviewSummary summary;
-        summary.reviewId = review.reviewId;
+        ReviewDTO summary;
+        summary.reviewId = review.id;
+        summary.mechanicId = review.mechanicId;
+        summary.customerId = review.customerId;
         summary.rating = review.rating;
         summary.comment = review.comment;
         summary.createdAt = review.createdAt;
 
         // Get customer name
-        auto customer = db_.getUserRecordById(review.customerId);
+        auto customer = db.getUserRecordById(review.customerId);
         if (customer.has_value()) {
             summary.customerName = customer->name;
         }
@@ -428,7 +437,7 @@ std::vector<ReviewSummary> MechanicService::listMyReviews(MechanicId mechanicId)
 
 void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, AppointmentId appointmentId)
 {
-    auto appt = db_.getAppointmentById(appointmentId);
+    auto appt = db.getAppointmentById(appointmentId);
     if (!appt.has_value()) {
         throw std::runtime_error("Appointment not found");
     }
@@ -440,7 +449,7 @@ void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, App
 
 void MechanicService::validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId)
 {
-    auto job = db_.getJobById(jobId);
+    auto job = db.getJobById(jobId);
     if (!job.has_value()) {
         throw std::runtime_error("Job not found");
     }
@@ -460,7 +469,7 @@ void MechanicService::publishJobUpdate(JobId jobId)
 bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
 {
     // Get all confirmed appointments for this mechanic
-    auto appointments = db_.listAppointmentsForMechanic(mechanicId);
+    auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
     for (const auto& appt : appointments) {
         if (appt.status == AppointmentStatus::CONFIRMED ||
