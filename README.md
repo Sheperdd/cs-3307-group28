@@ -65,3 +65,82 @@ If you're using Visual Studio with a WSL toolchain:
 - db.updateVehicle() and db.deleteVehicle() return bool. If they return false because the ID doesn't exist (vs. a real DB error), the client still gets a 500 Internal Server Error instead of a 404 Not Found. The DB API doesn't distinguish these two cases.
 - No validation on VehicleRecord fields after deserialization
 After parsing, there is no validation (like if the year is reasonable, vin is non-empty, mileage is non-negative). Garbage data can be written directly to the db.
+
+## Database Schema
+Appointments
+- appointmentId
+- customerId
+- mechanicId
+- formId
+- customerName
+- customerEmail
+- customerPhone
+- mechanicName
+- scheduledAt
+- status
+- note
+- createdAt
+- vehicleId
+- vehicleDescription
+- symptoms
+- severity
+
+Jobs
+- jobId
+- appointmentId
+- customerId
+- mechanicId
+- currentStage
+- percentComplete
+- lastNote
+- updatedAt
+- startedAt
+- completedAt
+- completionNote
+- customerName
+- customerEmail
+- vehicleDescription
+- isBlocked
+
+Mechanics
+- mechanicId
+- userId
+- displayName
+- shopName
+- hourlyRate
+- specialties
+- averageRating
+- reviewCount
+
+Customers
+- userId
+- fullName
+- email
+- phone
+- createdAt
+
+Symptoms
+- formId
+- customerId
+- vehicleId
+- description
+- severity
+- createdAt
+
+Vehicles
+- vehicleId
+- ownerId
+- vin
+- make
+- model
+- year
+- mileage
+
+Reviews
+- reviewId
+- mechanicId
+- customerId
+- rating
+- comment
+- createdAt
+- customerName

@@ -15,7 +15,7 @@
 class CustomerValidator {
 public:
     virtual ~CustomerValidator() = default;
-    virtual bool validateCustomerProfile(const UserCreate& profile) = 0;
+    virtual bool validateCustomerProfile(const CustomerCreate& profile) = 0;
     virtual bool validateVehicle(const VehicleCreate& vehicle) = 0;
     virtual bool validateSymptomForm(const SymptomFormCreate& form) = 0;
     virtual bool validateReview(const ReviewCreate& review) = 0;
@@ -43,9 +43,9 @@ public:
                     ProfitabilityEngine& profitabilityEngine, CustomerValidator& validator);
 
     // Customer Profile Management
-    UserId createCustomerProfile(const UserCreate& profile);
-    UserDTO getCustomerProfile(UserId customerId);
-    bool updateCustomerProfile(UserId customerId, const UserProfileUpdate& updates);
+    UserId createCustomerProfile(const CustomerCreate& profile);
+    CustomerDTO getCustomerProfile(UserId customerId);
+    bool updateCustomerProfile(UserId customerId, const CustomerProfileUpdate& updates);
 
     // Vehicle Management
     VehicleId addVehicle(UserId customerId, const VehicleCreate& vehicle);

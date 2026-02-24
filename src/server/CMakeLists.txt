@@ -16,7 +16,7 @@ add_executable(TorqueServer
     main.cpp 
     Server.cpp
     HttpSession.cpp
-    endpoints/Users.cpp
+    endpoints/Customers.cpp
     endpoints/Appointments.cpp
     endpoints/Jobs.cpp
     endpoints/Mechanics.cpp

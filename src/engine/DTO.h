@@ -12,7 +12,7 @@
  * One DTO per table, plus auth helpers. These are the shapes sent over HTTP.
  * DB-layer Record/Update structs live in Records.h — don't duplicate them here.
  *
- * Tables (7):  Users, Vehicles, SymptomForms, Mechanics, Appointments, Jobs, Reviews
+ * Tables (7):  Customers, Vehicles, SymptomForms, Mechanics, Appointments, Jobs, Reviews
  */
 
 // ========================= Shared ID aliases =========================
@@ -38,14 +38,14 @@ struct AuthResult {
 
 // ========================= 1. Users =========================
 // POST /users  — frontend → server
-struct UserCreate {
+struct CustomerCreate {
     std::string fullName;
     std::string email;
     std::string phone;
 };
 
 // GET /users, GET /users/{id}  — server → frontend
-struct UserDTO {
+struct CustomerDTO {
     UserId      userId{};
     std::string fullName;
     std::string email;
@@ -54,7 +54,7 @@ struct UserDTO {
 };
 
 // PATCH /users/{id}  — frontend → server (all fields optional)
-struct UserProfileUpdate {
+struct CustomerProfileUpdate {
     std::optional<std::string> fullName;
     std::optional<std::string> email;
     std::optional<std::string> phone;

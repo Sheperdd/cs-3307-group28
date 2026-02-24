@@ -2,7 +2,7 @@
 #include "http_utils.h"
 
 // Endpoint handlers
-#include "endpoints/Users.h"
+#include "endpoints/Customers.h"
 #include "endpoints/Appointments.h"
 #include "endpoints/Jobs.h"
 #include "endpoints/Mechanics.h"
@@ -35,8 +35,8 @@ HttpSession::HttpSession(tcp::socket socket,
 
 void HttpSession::register_handlers()
 {
-    handlers_["users"]        = std::make_unique<UsersHandler>();
-    handlers_["login"]        = std::make_unique<UsersHandler>();   // login shares user logic
+    handlers_["users"]        = std::make_unique<CustomersHandler>();
+    handlers_["login"]        = std::make_unique<CustomersHandler>();   // login shares user logic
     handlers_["appointments"] = std::make_unique<AppointmentsHandler>();
     handlers_["jobs"]         = std::make_unique<JobsHandler>();
     handlers_["mechanics"]    = std::make_unique<MechanicsHandler>();

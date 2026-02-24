@@ -1,9 +1,9 @@
-#include "Users.h"
+#include "Customers.h"
 
 using json = nlohmann::json;
 
 net::awaitable<http::response<http::string_body>>
-UsersHandler::handle(const http::request<http::string_body> &req,
+CustomersHandler::handle(const http::request<http::string_body> &req,
                      const std::vector<std::string> &path_parts,
                      DatabaseManager &db,
                      net::thread_pool &pool)

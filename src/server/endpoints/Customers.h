@@ -3,7 +3,7 @@
 #include "EndpointHandler.h"
 
 /// @brief Handles requests to /users and /users/{id}, as well as /login.
-class UsersHandler : public EndpointHandler
+class CustomersHandler : public EndpointHandler
 {
 public:
   net::awaitable<http::response<http::string_body>>
