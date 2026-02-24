@@ -38,8 +38,8 @@ public:
     JobDTO getJob(JobId jobId);
 
     bool updateJobStage(MechanicId mechanicId, JobId jobId, JobStage stage, int percentCompleted, std::string note);
-    bool markJobBlocked(MechanicId mechanicId, JobId jobId, std::string reasoning);
-    bool markJobComplete(MechanicId mechanicId, JobId jobId, std::string completionSum);
+    bool markJobBlocked(MechanicId mechanicId, JobId jobId, const std::string& reasoning);
+    bool markJobComplete(MechanicId mechanicId, JobId jobId, const std::string& completionSum);
 
     std::vector<ReviewDTO> listMyReviews(MechanicId mechanicId);
 

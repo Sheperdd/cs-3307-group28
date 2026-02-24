@@ -84,7 +84,6 @@ std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mec
 {
     // Get all appointments for this mechanic with "pending" status
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
-    auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
     std::vector<AppointmentDTO> requests;
     for (const auto& appt : appointments) {
@@ -136,7 +135,7 @@ bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot pr
         throw std::runtime_error("Appointment not found");
     }
 
-    if (!appt -> status != AppointmentStatus::REQUESTED){
+    if (appt->status != AppointmentStatus::REQUESTED){
         throw std::runtime_error("Appointment was not requested");
     }
 
@@ -163,8 +162,8 @@ bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot pr
 }
 
 
-bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason) const {
-    auto appt= db.getAppointmentById(appointmentId);
+bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason){
+    auto appt = db.getAppointmentById(appointmentId);
 
     if (!appt.has_value()){
         throw std::runtime_error("Appointment was not found");
@@ -178,15 +177,16 @@ bool MechanicService::declineAppointment(AppointmentId appointmentId, std::strin
 }
 
 bool MechanicService::RescheduleAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note){
+    auto appt = db.getAppointmentById(appointmentId);
     if (!appt.has_value()){
         throw std::runtime_error("Appointment was not found");
     }
 
-    if (appt -> status != AppointmentStatus::REQUESTED){
-        throw std::runtime_error("Appointment was not requested");
+    if (appt->status != AppointmentStatus::REQUESTED && appt->status != AppointmentStatus::SCHEDULED){
+        throw std::runtime_error("Appointment cannot be rescheduled in its current state");
     }
 
-    //needs appointmentUpdate structure with shceduled time;
+    // TODO: update scheduledAt with proposedSlot
 
     db.updateAppointmentStatus(appointmentId, AppointmentStatus::SCHEDULED);
 
@@ -370,7 +370,7 @@ JobDTO MechanicService::getJob(JobId jobId)
 bool MechanicService::updateJobStage(MechanicId mechanicId, JobId jobId, JobStage stage, int percentCompleted, std::string note){
     validateMechanicOwnsJob(mechanicId, jobId);
 
-    bool success = db.updateJobStage(jobId, stage, percentComplete, note);
+    bool success = db.updateJobStage(jobId, stage, percentCompleted, note);
     if (success) {
         publishJobUpdate(jobId);
         //TODO: this
@@ -383,11 +383,8 @@ bool MechanicService::markJobBlocked(MechanicId mechanicId, JobId jobId, const s
 {
     validateMechanicOwnsJob(mechanicId, jobId);
 
-    JobStage blockedStage;
-    blockedStage.stageName = "blocked";
-    blockedStage.description = reason;
-
-    return db.updateJobStage(jobId, blockedStage, -1, reason);
+    // Mark the job as blocked by setting percentComplete to -1 with a note
+    return db.updateJobStage(jobId, JobStage::REPAIR, -1, "BLOCKED: " + reason);
 }
 
 bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const std::string& completionSummary)
@@ -399,7 +396,7 @@ bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const 
         // Update associated appointment to completed
         auto job = db.getJobById(jobId);
         if (job.has_value()) {
-            db.updateAppointmentStatus(job->appointmentId, AppointmentStatus::Completed);
+            db.updateAppointmentStatus(job->appointmentId, AppointmentStatus::COMPLETED);
         }
 
         publishJobUpdate(jobId);
@@ -412,7 +409,6 @@ bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const 
 
 std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 {
-    auto reviews = db.listReviewsForMechanic(mechanicId);
     auto reviews = db.listReviewsForMechanic(mechanicId);
 
     std::vector<ReviewDTO> summaries;
@@ -427,9 +423,8 @@ std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 
         // Get customer name
         auto customer = db.getUserRecordById(review.customerId);
-        auto customer = db.getUserRecordById(review.customerId);
         if (customer.has_value()) {
-            summary.customerName = customer->fullname;
+            summary.customerName = customer->name;
         }
 
         summaries.push_back(summary);
@@ -440,9 +435,8 @@ std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 
 // ---------------- Private Helper Methods ----------------
 
-void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, AppointmentId appointmentId)
+void MechanicService::validateMechanicOwnAppointment(MechanicId mechanicId, AppointmentId appointmentId)
 {
-    auto appt = db.getAppointmentById(appointmentId);
     auto appt = db.getAppointmentById(appointmentId);
     if (!appt.has_value()) {
         throw std::runtime_error("Appointment not found");
@@ -455,7 +449,6 @@ void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, App
 
 void MechanicService::validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId)
 {
-    auto job = db.getJobById(jobId);
     auto job = db.getJobById(jobId);
     if (!job.has_value()) {
         throw std::runtime_error("Job not found");
@@ -477,7 +470,6 @@ bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
 {
     // Get all confirmed appointments for this mechanic
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
-    auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
     for (const auto& appt : appointments) {
         if (appt.status == AppointmentStatus::CONFIRMED ||
@@ -486,7 +478,7 @@ bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
             // Check if times overlap
             // TODO: Implement proper time overlap logic based on TimeSlot structure
             // This is a simplified placeholder
-            if (appt.scheduledTime == slot.start) {
+            if (appt.scheduledAt == slot.start) {
                 return true;
             }
         }
@@ -497,29 +489,14 @@ bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
 
 std::vector<JobStage> MechanicService::buildDefaultStages()
 {
-    std::vector<JobStage> stages;
-
-    JobStage diagnostic;
-    diagnostic.stageName = "diagnostic";
-    diagnostic.description = "Initial diagnostic assessment";
-    stages.push_back(diagnostic);
-
-    JobStage partsOrdering;
-    partsOrdering.stageName = "parts_ordering";
-    partsOrdering.description = "Ordering required parts";
-    stages.push_back(partsOrdering);
-
-    JobStage repair;
-    repair.stageName = "repair";
-    repair.description = "Performing repairs";
-    stages.push_back(repair);
-
-    JobStage testing;
-    testing.stageName = "testing";
-    testing.description = "Testing and quality check";
-    stages.push_back(testing);
-
-    return stages;
+    // Returns the standard progression of job stages
+    return {
+        JobStage::DIAGNOSTICS,
+        JobStage::PARTS,
+        JobStage::REPAIR,
+        JobStage::QA,
+        JobStage::DONE
+    };
 }
 
 
