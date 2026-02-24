@@ -3,6 +3,41 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
+#include <stdexcept>
+
+using json = nlohmann::json;
+
+// Generates current date and time as ISO string
+static std::string nowISO()
+{
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::gmtime(&t);
+    char buffer[30];
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return std::string(buffer);
+}
+
+// ==================== Constructor / Destructor ====================
+DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE)
+{
+    try
+    {
+        db.exec("CREATE TABLE IF NOT EXISTS users ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "email TEXT, "
+                "password TEXT, "
+                "role INTEGER, "
+                "createdAt TEXT)");
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "DB initializing Error: " << e.what() << std::endl;
+    }
+}
+
+DatabaseManager::~DatabaseManager() {}
+
+// ==================== Legacy JSON API ====================
 
 nlohmann::json DatabaseManager::getUserById(int userId)
 {
@@ -46,17 +81,13 @@ nlohmann::json DatabaseManager::getAllUsers()
 
 bool DatabaseManager::updateUser(int userId, const std::string &name, const std::string &password)
 {
-    // Only email and role are supported by updateUserRecord; name is unused
-    // Let's assume "name" is intended as email update
     UserUpdate update;
     update.email = name;
-    // No role update here
-    return updateUserRecord(userId, update);
+    return updateUserRecord(static_cast<UserId>(userId), update);
 }
 
 bool DatabaseManager::updatePassword(int userId, const std::string &name, const std::string &newPassword)
 {
-    // Update password (and optionally email if name is set)
     try
     {
         std::string sql = "UPDATE users SET password = ?";
@@ -122,7 +153,6 @@ bool DatabaseManager::verifyLogin(const std::string &email, const std::string &p
         if (query.executeStep())
         {
             std::string storedHash = query.getColumn(0).getText();
-            // For now, just compare directly (assume hash is already done)
             return storedHash == password;
         }
     }
@@ -168,42 +198,9 @@ void DatabaseManager::resetDatabase()
         std::cerr << "Reset Database Error: " << e.what() << std::endl;
     }
 }
-#include "DatabaseManager.h"
-#include <iostream>
-#include <chrono>
-#include <ctime>
 
-// Generates current date and time;
-static std::string nowISO()
-{
-    std::time_t t = std::time(nullptr);
-    std::tm tm = *std::gmtime(&t);
-    char buffer[30];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &tm);
-    return std::string(buffer);
-}
+// ==================== Record-oriented User CRUD ====================
 
-// -------------------- Constructor / Destructor --------------------
-DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE)
-{
-    try
-    {
-        db.exec("CREATE TABLE IF NOT EXISTS users ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "email TEXT, "
-                "password TEXT, "
-                "role INTEGER, "
-                "createdAt TEXT)");
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "DB initializing Error: " << e.what() << std::endl;
-    }
-}
-
-DatabaseManager::~DatabaseManager() {}
-
-// -------------------- User CRUD --------------------
 UserId DatabaseManager::createUser(const std::string &name,
                                    const std::string &email,
                                    const std::string &passwordHash,
@@ -319,8 +316,7 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
     }
 }
 
-// -------------------- Vehicle CRUD --------------------
-// TODO: Implement createVehicle, getVehicleById, listVehiclesForUser, updateVehicle, deleteVehicle
+// ==================== Vehicle CRUD ====================
 
 VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord &vehicle)
 {
@@ -341,7 +337,7 @@ VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord
             "VALUES (?, ?, ?, ?, ?, datetime('now'))"
         );
 
-        stmt.bind(1, static_cast<long long>(ownerUserId));
+        stmt.bind(1, static_cast<int64_t>(ownerUserId));
         stmt.bind(2, vehicle.vin);
         stmt.bind(3, vehicle.make);
         stmt.bind(4, vehicle.model);
@@ -356,11 +352,6 @@ VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord
         throw std::runtime_error(std::string("createVehicle failed: ") + e.what());
     }
 }
-    // TODO: implement
-    (void)ownerUserId;
-    (void)vehicle;
-    return -1; // null-equivalent for ID
-}
 
 std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId)
 {
@@ -373,7 +364,7 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
             "FROM vehicles WHERE id = ?"
         );
 
-        stmt.bind(1, static_cast<long long>(vehicleId));
+        stmt.bind(1, static_cast<int64_t>(vehicleId));
 
         if (!stmt.executeStep()) {
             return std::nullopt;
@@ -393,10 +384,6 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
         throw std::runtime_error(std::string("getVehicleById failed: ") + e.what());
     }
 }
-    // TODO: implement
-    (void)vehicleId;
-    return std::nullopt; // null-equivalent
-}
 
 std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUserId)
 {
@@ -411,7 +398,7 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
             "FROM vehicles WHERE ownerUserId = ?"
         );
 
-        stmt.bind(1, static_cast<long long>(ownerUserId));
+        stmt.bind(1, static_cast<int64_t>(ownerUserId));
 
         while (stmt.executeStep()) {
             VehicleRecord rec{};
@@ -430,9 +417,6 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("listVehiclesForUser failed: ") + e.what());
     }
-    // TODO: implement
-    (void)ownerUserId;
-    return {}; // empty/null-equivalent
 }
 
 bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &updates)
@@ -461,18 +445,13 @@ bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
         if (updates.model.has_value()) stmt.bind(idx++, updates.model.value());
         if (updates.year.has_value())  stmt.bind(idx++, updates.year.value());
 
-        stmt.bind(idx, static_cast<long long>(vehicleId));
+        stmt.bind(idx, static_cast<int64_t>(vehicleId));
 
         return stmt.exec() > 0;
     }
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("updateVehicle failed: ") + e.what());
     }
-}
-    // TODO: implement
-    (void)vehicleId;
-    (void)updates;
-    return false; // null-equivalent
 }
 
 bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
@@ -485,18 +464,16 @@ bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
             "DELETE FROM vehicles WHERE id = ?"
         );
 
-        stmt.bind(1, static_cast<long long>(vehicleId));
+        stmt.bind(1, static_cast<int64_t>(vehicleId));
         return stmt.exec() > 0;
     }
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("deleteVehicle failed: ") + e.what());
     }
-    // TODO: implement
-    (void)vehicleId;
-    return false; // null-equivalent
 }
 
-// -------------------- Mechanic helpers --------------------
+// ==================== Mechanic helpers (Legacy JSON) ====================
+
 nlohmann::json DatabaseManager::userRecordToJson(const UserRecord &u) const
 {
     return json(u);
@@ -528,7 +505,8 @@ nlohmann::json DatabaseManager::getAllByRole(UserRole role) const
     return arr;
 }
 
-// -------------------- Convenience wrappers --------------------
+// ==================== Convenience wrappers ====================
+
 bool DatabaseManager::addUser(const std::string &name, const std::string &email, const std::string &password)
 {
     return createUser(name, email, password, UserRole::CUSTOMER) != -1;
