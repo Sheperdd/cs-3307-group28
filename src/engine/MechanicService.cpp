@@ -84,6 +84,7 @@ std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mec
 {
     // Get all appointments for this mechanic with "pending" status
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
+    auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
     std::vector<AppointmentDTO> requests;
     for (const auto& appt : appointments) {
@@ -144,23 +145,25 @@ bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot pr
     }
 
     db.beginTransaction();
-    try{
-        bool success = db.updateAppointmentStatus(AppointmentId, AppointmentStatus::SCHEDULED);
+    try {
+        bool success = db.updateAppointmentStatus(appointmentId, AppointmentStatus::SCHEDULED);
         if (!success){
             db.rollback();
             return false;
         }
 
-        //needs to filled more
+        // needs to be filled more
 
-    }catch (...){
+        db.commit();
+    } catch (...) {
         db.rollback();
         throw;
     }
+    return true;
 }
 
 
-bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason){
+bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason) const {
     auto appt= db.getAppointmentById(appointmentId);
 
     if (!appt.has_value()){
@@ -410,6 +413,7 @@ bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const 
 std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 {
     auto reviews = db.listReviewsForMechanic(mechanicId);
+    auto reviews = db.listReviewsForMechanic(mechanicId);
 
     std::vector<ReviewDTO> summaries;
     for (const auto& review : reviews) {
@@ -423,8 +427,9 @@ std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 
         // Get customer name
         auto customer = db.getUserRecordById(review.customerId);
+        auto customer = db.getUserRecordById(review.customerId);
         if (customer.has_value()) {
-            summary.customerName = customer->name;
+            summary.customerName = customer->fullname;
         }
 
         summaries.push_back(summary);
@@ -438,6 +443,7 @@ std::vector<ReviewDTO> MechanicService::listMyReviews(MechanicId mechanicId)
 void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, AppointmentId appointmentId)
 {
     auto appt = db.getAppointmentById(appointmentId);
+    auto appt = db.getAppointmentById(appointmentId);
     if (!appt.has_value()) {
         throw std::runtime_error("Appointment not found");
     }
@@ -449,6 +455,7 @@ void MechanicService::validateMechanicOwnsAppointment(MechanicId mechanicId, App
 
 void MechanicService::validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId)
 {
+    auto job = db.getJobById(jobId);
     auto job = db.getJobById(jobId);
     if (!job.has_value()) {
         throw std::runtime_error("Job not found");
@@ -469,6 +476,7 @@ void MechanicService::publishJobUpdate(JobId jobId)
 bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
 {
     // Get all confirmed appointments for this mechanic
+    auto appointments = db.listAppointmentsForMechanic(mechanicId);
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
     for (const auto& appt : appointments) {
