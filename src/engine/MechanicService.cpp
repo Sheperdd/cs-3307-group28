@@ -464,7 +464,7 @@ bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
 
     for (const auto& appt : appointments) {
         if (appt.status == AppointmentStatus::CONFIRMED ||
-            appt.status == AppointmentStatus::IN_PROGRES) {
+            appt.status == AppointmentStatus::IN_PROGRESS) {
 
             // Check if times overlap
             // TODO: Implement proper time overlap logic based on TimeSlot structure
