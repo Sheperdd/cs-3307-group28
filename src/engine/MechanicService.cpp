@@ -7,7 +7,7 @@
 
 MechanicService::MechanicService(DatabaseManager& db) : db(db){}
 
-MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicProfileCreate& profile){
+MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicProfileCreate& profile) const {
     auto user = db.getUserRecordById(userId);
     if (!user.has_value()){
         throw std::runtime_error("user not found");
@@ -40,7 +40,7 @@ MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicP
     return mechanic -> userId;
 }
 
-MechanicProfile MechanicService::getMechanicProfile(MechanicId mechanicId){
+MechanicProfile MechanicService::getMechanicProfile(MechanicId mechanicId) const {
     auto mechanic = db.getMechanicByUserId(mechanicId);
 
     if (!mechanic.has_value()){
@@ -64,6 +64,7 @@ MechanicProfile MechanicService::getMechanicProfile(MechanicId mechanicId){
     profile.userId = mechanic -> userId;
     profile.specialties = mechanic -> specialties;
     profile.hourlyRate= mechanic->hourlyRate;
+    profile.averageRating = avgRating;
 
 
     return profile;
@@ -78,8 +79,7 @@ bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicProfi
     return db.updateMechanicProfile(mechanicId, updates);
 }
 
-std::vector<AppointmentRequestView> MechanicService::listIncomingRequests(MechanicId mechanicId)
-{
+std::vector<AppointmentRequestView> MechanicService::listIncomingRequests(MechanicId mechanicId){
     // Get all appointments for this mechanic with "pending" status
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
@@ -143,23 +143,25 @@ bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot pr
     }
 
     db.beginTransaction();
-    try{
-        bool success = db.updateAppointmentStatus(AppointmentId, AppointmentStatus::SCHEDULED);
+    try {
+        bool success = db.updateAppointmentStatus(appointmentId, AppointmentStatus::SCHEDULED);
         if (!success){
             db.rollback();
             return false;
         }
 
-        //needs to filled more
+        // needs to be filled more
 
-    }catch (...){
+        db.commit();
+    } catch (...) {
         db.rollback();
         throw;
     }
+    return true;
 }
 
 
-bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason){
+bool MechanicService::declineAppointment(AppointmentId appointmentId, std::string reason) const {
     auto appt= db.getAppointmentById(appointmentId);
 
     if (!appt.has_value()){

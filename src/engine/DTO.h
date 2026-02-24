@@ -99,7 +99,7 @@ struct MechanicProfileView {
     std::string shopName;
     double hourlyRate{ 0.0 };
     std::vector<std::string> specialties;
-    double averageRating{ 0.0 };
+    double averageRating = 0;   ;
     int reviewCount{ 0 };
     std::optional<double> distanceKm;  // stub OK MVP
 };
@@ -125,6 +125,7 @@ struct MechanicProfile {
     std::string shopName;
     double hourlyRate{ 0.0 };
     std::vector<std::string> specialties;
+    double averageRating { 0.0 };
 };
 
 struct MechanicProfileUpdate {

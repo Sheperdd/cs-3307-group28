@@ -22,13 +22,16 @@ public:
     explicit MechanicService(DatabaseManager& db);
     ~MechanicService();
 
-    MechanicId createMechanicProfile(UserId userId, const MechanicProfileCreate& profile);
-    MechanicProfile getMechanicProfile(MechanicId mechanicId);
+    MechanicId createMechanicProfile(UserId userId, const MechanicProfileCreate& profile) const;
+    MechanicProfile getMechanicProfile(MechanicId mechanicId) const;
 
     bool updateMechanicProfile(MechanicId mechanicId, MechanicProfileUpdate updates);
+
+    std::vector<AppointmentRequestView> listIncomingRequests(MechanicId mechanicId);
+
     std::vector <AppointmentRequestView> listIncomminRequests(MechanicId mechanicId);
     bool AcceptAppointment (AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
-    bool declineAppointment(AppointmentId appointmentId, std::string reason);
+    bool declineAppointment(AppointmentId appointmentId, std::string reason) const;
     bool RescheduleAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
 
     std::vector <AppointmentSummary> listAppointments(MechanicId mechanicId, DataRange dateRange);
