@@ -2,13 +2,15 @@
 add_library(TorqueEngine STATIC
     DatabaseManager.cpp
     DatabaseManager.h
+    CustomerService.cpp
+    CustomerService.h
     "Records.h"
     "RecordsSerialization.h"
     "DTO.h")
 
 # Link libraries this engine needs
-target_link_libraries(TorqueEngine 
-    PUBLIC 
+target_link_libraries(TorqueEngine
+    PUBLIC
     nlohmann_json::nlohmann_json
     SQLiteCpp
 )

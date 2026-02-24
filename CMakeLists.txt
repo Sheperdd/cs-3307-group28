@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
-project(TorqueDesk VERSION 0.1 
+project(TorqueDesk VERSION 0.1
                    LANGUAGES CXX
                    DESCRIPTION "A platform designed to take the headache out of automotive repairs for both the mechanic and the vehicle owner.")
+
+enable_testing()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

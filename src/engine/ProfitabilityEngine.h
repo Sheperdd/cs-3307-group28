@@ -1,3 +1,5 @@
+#pragma once
+
 #include "DatabaseManager.h"
 
 class ProfitabilityEngine{

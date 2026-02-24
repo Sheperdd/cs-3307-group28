@@ -1,3 +1,5 @@
+#pragma once
+
 #include "DatabaseManager.h"
 #include "Records.h"
 
@@ -12,6 +14,6 @@ class RatingEngine {
         int compute(MechanicID id);
         double getechanicScore(MechanicID id);
 
-        
+
 
 };
