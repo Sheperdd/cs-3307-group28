@@ -22,7 +22,7 @@ DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE 
 {
     try
     {
-        db.exec("CREATE TABLE IF NOT EXISTS users ("
+        db.exec("CREATE TABLE IF NOT EXISTS customers ("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 "email TEXT, "
                 "password TEXT, "
@@ -60,7 +60,7 @@ nlohmann::json DatabaseManager::getAllUsers()
     nlohmann::json arr = nlohmann::json::array();
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users");
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers");
         while (query.executeStep())
         {
             UserRecord u;
@@ -74,7 +74,7 @@ nlohmann::json DatabaseManager::getAllUsers()
     }
     catch (std::exception &e)
     {
-        std::cerr << "Get All Users Error: " << e.what() << std::endl;
+        std::cerr << "Get All Customers Error: " << e.what() << std::endl;
     }
     return arr;
 }
@@ -90,7 +90,7 @@ bool DatabaseManager::updatePassword(int userId, const std::string &name, const 
 {
     try
     {
-        std::string sql = "UPDATE users SET password = ?";
+        std::string sql = "UPDATE customers SET password = ?";
         bool updateEmail = !name.empty();
         if (updateEmail)
             sql += ", email = ?";
@@ -115,7 +115,7 @@ bool DatabaseManager::deleteUser(int userId)
 {
     try
     {
-        SQLite::Statement query(db, "DELETE FROM users WHERE id = ?");
+        SQLite::Statement query(db, "DELETE FROM customers WHERE id = ?");
         query.bind(1, userId);
         query.exec();
         return true;
@@ -131,7 +131,7 @@ int DatabaseManager::getUserCount()
 {
     try
     {
-        SQLite::Statement query(db, "SELECT COUNT(*) FROM users");
+        SQLite::Statement query(db, "SELECT COUNT(*) FROM customers");
         if (query.executeStep())
         {
             return query.getColumn(0).getInt();
@@ -148,7 +148,7 @@ bool DatabaseManager::verifyLogin(const std::string &email, const std::string &p
 {
     try
     {
-        SQLite::Statement query(db, "SELECT password FROM users WHERE email = ?");
+        SQLite::Statement query(db, "SELECT password FROM customers WHERE email = ?");
         query.bind(1, email);
         if (query.executeStep())
         {
@@ -167,7 +167,7 @@ bool DatabaseManager::emailExists(const std::string &email)
 {
     try
     {
-        SQLite::Statement query(db, "SELECT 1 FROM users WHERE email = ?");
+        SQLite::Statement query(db, "SELECT 1 FROM customers WHERE email = ?");
         query.bind(1, email);
         if (query.executeStep())
         {
@@ -185,8 +185,8 @@ void DatabaseManager::resetDatabase()
 {
     try
     {
-        db.exec("DROP TABLE IF EXISTS users");
-        db.exec("CREATE TABLE users ("
+        db.exec("DROP TABLE IF EXISTS customers");
+        db.exec("CREATE TABLE customers ("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 "email TEXT, "
                 "password TEXT, "
@@ -209,7 +209,7 @@ UserId DatabaseManager::createUser(const std::string &name,
     try
     {
         SQLite::Statement query(db,
-                                "INSERT INTO users (email, password, role, createdAt) VALUES (?, ?, ?, ?)");
+                                "INSERT INTO customers (email, password, role, createdAt) VALUES (?, ?, ?, ?)");
 
         query.bind(1, email);
         query.bind(2, passwordHash);
@@ -230,7 +230,7 @@ std::optional<UserRecord> DatabaseManager::getUserRecordById(UserId id)
 {
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE id = ?");
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE id = ?");
         query.bind(1, id);
 
         if (query.executeStep())
@@ -256,7 +256,7 @@ std::optional<UserRecord> DatabaseManager::getUserRecordByEmail(const std::strin
 {
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE email = ?");
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE email = ?");
         query.bind(1, email);
 
         if (query.executeStep())
@@ -282,7 +282,7 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
 {
     try
     {
-        std::string sql = "UPDATE users SET ";
+        std::string sql = "UPDATE customers SET ";
         bool first = true;
         if (update.email.has_value())
         {
@@ -484,7 +484,7 @@ nlohmann::json DatabaseManager::getAllByRole(UserRole role) const
     nlohmann::json arr = nlohmann::json::array();
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM users WHERE role = ?");
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE role = ?");
         query.bind(1, static_cast<int>(role));
 
         while (query.executeStep())
