@@ -4,6 +4,14 @@ add_library(TorqueEngine STATIC
     DatabaseManager.h
     CustomerService.cpp
     CustomerService.h
+    MechanicService.cpp
+    MechanicService.h
+    RatingEngine.cpp
+    RatingEngine.h
+    ProfitabilityEngine.cpp
+    ProfitabilityEngine.h
+    DefaultCustomerValidator.h
+    DTOSerialization.h
     "Records.h"
     "RecordsSerialization.h"
     "DTO.h")

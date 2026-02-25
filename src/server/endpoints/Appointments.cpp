@@ -5,7 +5,7 @@ using json = nlohmann::json;
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::handle(const http::request<http::string_body> &req,
                             const std::vector<std::string> &path_parts,
-                            DatabaseManager &db,
+                            ServiceContext &ctx,
                             net::thread_pool &pool)
 {
 
@@ -22,7 +22,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
       if (id < 0)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid Appointment ID", ver, ka);
-      co_return co_await getById(id, ver, ka, db, pool);
+      co_return co_await getById(id, ver, ka, ctx, pool);
     }
     else if(req.method() == http::verb::patch)
     {
@@ -31,7 +31,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
       if (id < 0)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid Appointment ID", ver, ka);
-      co_return co_await updateStatus(id, req, ver, ka, db, pool);
+      co_return co_await updateStatus(id, req, ver, ka, ctx, pool);
     }
   case 3:
     co_return http_utils::make_error(http::status::not_implemented,
@@ -46,8 +46,9 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::create(UserId userId, const http::request<http::string_body> &req,
                             unsigned ver, bool ka,
-                            DatabaseManager &db, net::thread_pool &pool)
+                            ServiceContext &ctx, net::thread_pool &pool)
 {
+  // TODO: Refactor to use ctx.customerService.requestAppointment()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }
@@ -55,8 +56,9 @@ AppointmentsHandler::create(UserId userId, const http::request<http::string_body
 // GET /appointments/{id}
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::getById(AppointmentId id, unsigned ver, bool ka,
-                             DatabaseManager &db, net::thread_pool &pool)
+                             ServiceContext &ctx, net::thread_pool &pool)
 {
+  // TODO: Refactor to use ctx.customerService.getAppointment() or ctx.mechanicService.getAppointmentDetails()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }
@@ -64,8 +66,9 @@ AppointmentsHandler::getById(AppointmentId id, unsigned ver, bool ka,
 // GET /users/{userId}/appointments
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::listCustomerAppts(UserId userId, unsigned ver, bool ka,
-                                       DatabaseManager &db, net::thread_pool &pool)
+                                       ServiceContext &ctx, net::thread_pool &pool)
 {
+  // TODO: Refactor to use ctx.customerService.listAppointments()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }
@@ -73,8 +76,9 @@ AppointmentsHandler::listCustomerAppts(UserId userId, unsigned ver, bool ka,
 // GET /mechanics/{mechanicId}/appointments
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::listMechanicAppts(UserId mechanicId, unsigned ver, bool ka,
-                                       DatabaseManager &db, net::thread_pool &pool)
+                                       ServiceContext &ctx, net::thread_pool &pool)
 {
+  // TODO: Refactor to use ctx.mechanicService.listAppointments()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }
@@ -83,8 +87,9 @@ AppointmentsHandler::listMechanicAppts(UserId mechanicId, unsigned ver, bool ka,
 net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::updateStatus(AppointmentId id, const http::request<http::string_body> &req,
                                   unsigned ver, bool ka,
-                                  DatabaseManager &db, net::thread_pool &pool)
+                                  ServiceContext &ctx, net::thread_pool &pool)
 {
+  // TODO: Refactor to use ctx.mechanicService.AcceptAppointment() / declineAppointment()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }

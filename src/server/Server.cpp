@@ -8,6 +8,11 @@
 #include <memory>
 
 Server::Server(net::io_context &io_context, short port)
+    : ratingEngine_(db_, 30)                                              // 30-day half-life
+    , profitabilityEngine_(db_, 80, 0.13)                                 // $80/hr default, 13 % tax
+    , customerService_(&db_, ratingEngine_, profitabilityEngine_, validator_)
+    , mechanicService_(db_)
+    , ctx_{ db_, customerService_, mechanicService_ }
 {
     // Build the acceptor, bind, and listen – all before spawning the coroutine
     tcp::acceptor acceptor(io_context, {tcp::v4(), static_cast<net::ip::port_type>(port)});
@@ -28,7 +33,7 @@ net::awaitable<void> Server::do_listen(tcp::acceptor acceptor)
 
         // Spawn an HTTP-session coroutine for this client
         auto session = std::make_shared<HttpSession>(
-            std::move(socket), db_, pool_);
+            std::move(socket), ctx_, pool_);
 
         net::co_spawn(
             acceptor.get_executor(),

@@ -7,6 +7,8 @@
 
 MechanicService::MechanicService(DatabaseManager& db) : db(db){}
 
+MechanicService::~MechanicService() = default;
+
 MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicCreate& profile){
     auto user = db.getUserRecordById(userId);
     if (!user.has_value()){

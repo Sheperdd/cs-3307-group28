@@ -20,10 +20,10 @@
 // ---------------------------------------------------------------------------
 
 HttpSession::HttpSession(tcp::socket socket,
-                         DatabaseManager &db,
+                         ServiceContext &ctx,
                          net::thread_pool &pool)
     : socket_(std::move(socket))
-    , db_(db)
+    , ctx_(ctx)
     , pool_(pool)
 {
     register_handlers();
@@ -63,7 +63,7 @@ HttpSession::route_request(const http::request<http::string_body> &req)
         co_return http_utils::make_error(http::status::not_found,
                                          "Not found", req.version(), req.keep_alive());
 
-    co_return co_await it->second->handle(req, parts, db_, pool_);
+    co_return co_await it->second->handle(req, parts, ctx_, pool_);
 }
 
 // ---------------------------------------------------------------------------

@@ -6,9 +6,12 @@ using json = nlohmann::json;
 net::awaitable<http::response<http::string_body>>
 CustomersHandler::handle(const http::request<http::string_body> &req,
                      const std::vector<std::string> &path_parts,
-                     DatabaseManager &db,
+                     ServiceContext &ctx,
                      net::thread_pool &pool)
 {
+    // TODO: Refactor to use ctx.customerService instead of ctx.db
+    auto &db = ctx.db;
+
     // GET /users/{id}
     // check the request method and path (path_parts[0] should be "users")
     if (req.method() == http::verb::get && path_parts.size() == 2)

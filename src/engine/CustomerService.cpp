@@ -48,6 +48,29 @@ VehicleId CustomerService::addVehicle(UserId customerId, const VehicleCreate& ve
 	return db->createVehicle(customerId, record);
 }
 
+VehicleDTO CustomerService::getVehicle(VehicleId vehicleId)
+{
+	if (vehicleId <= 0) {
+		throw std::invalid_argument("getVehicle: invalid vehicleId");
+	}
+
+	auto vehicle = db->getVehicleById(vehicleId);
+	if (!vehicle.has_value()) {
+		throw std::runtime_error("getVehicle: vehicle not found");
+	}
+
+	VehicleDTO dto{};
+	dto.vehicleId = vehicle->id;
+	dto.ownerId = vehicle->ownerUserId;
+	dto.vin = vehicle->vin;
+	dto.make = vehicle->make;
+	dto.model = vehicle->model;
+	dto.year = vehicle->year;
+	dto.mileage = vehicle->mileage;
+
+	return dto;
+}
+
 std::vector<VehicleDTO> CustomerService::listVehicles(UserId customerId)
 {
 	if (customerId <= 0) {

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "../http_utils.h"
-#include "../../engine/DatabaseManager.h"
+#include "../ServiceContext.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -18,6 +18,10 @@ using tcp = net::ip::tcp;
 ///        Each endpoint (e.g. Users, Vehicles) inherits from this
 ///        and implements the handle() coroutine to process requests
 ///        matching its URL prefix.
+///
+///        Handlers receive a ServiceContext which bundles all engine
+///        services.  Prefer calling the appropriate service (e.g.
+///        ctx.customerService) instead of ctx.db directly.
 class EndpointHandler
 {
 public:
@@ -26,12 +30,12 @@ public:
   /// @brief Processes an HTTP request routed to this endpoint.
   /// @param req         The incoming HTTP request.
   /// @param path_parts  The URL path split into segments (e.g. ["users", "42"]).
-  /// @param db          Reference to the shared DatabaseManager.
+  /// @param ctx         The ServiceContext containing engine services and db.
   /// @param pool        Reference to the thread pool for blocking DB calls.
   /// @return An awaitable response to send back to the client.
   virtual net::awaitable<http::response<http::string_body>>
   handle(const http::request<http::string_body> &req,
          const std::vector<std::string> &path_parts,
-         DatabaseManager &db,
+         ServiceContext &ctx,
          net::thread_pool &pool) = 0;
 };

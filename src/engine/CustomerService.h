@@ -49,6 +49,7 @@ public:
 
     // Vehicle Management
     VehicleId addVehicle(UserId customerId, const VehicleCreate& vehicle);
+    VehicleDTO getVehicle(VehicleId vehicleId);
     std::vector<VehicleDTO> listVehicles(UserId customerId);
     bool updateVehicle(VehicleId vehicleId, const VehicleUpdate& updates);
     bool removeVehicle(VehicleId vehicleId);

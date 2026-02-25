@@ -61,6 +61,36 @@ static void ensureJobsSchema(SQLite::Database& db)
     );
 }
 
+static void ensureAppointmentsSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS appointments ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "customerId INTEGER, "
+        "mechanicId INTEGER, "
+        "vehicleId INTEGER, "
+        "symptomFormId INTEGER, "
+        "scheduledAt TEXT, "
+        "status INTEGER DEFAULT 0, "
+        "note TEXT, "
+        "createdAt TEXT)"
+    );
+}
+
+static void ensureReviewsSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS reviews ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "jobId INTEGER, "
+        "customerId INTEGER, "
+        "mechanicId INTEGER, "
+        "rating INTEGER, "
+        "comment TEXT, "
+        "createdAt TEXT)"
+    );
+}
+
 // ==================== Constructor / Destructor ====================
 DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE)
 {
@@ -790,6 +820,159 @@ std::vector<TimeSlot> DatabaseManager::getMechanicAvailability(MechanicId mechan
     }
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("getMechanicAvailability failed: ") + e.what());
+    }
+}
+
+// ==================== Transactions ====================
+
+void DatabaseManager::beginTransaction()
+{
+    if (inTx_) return;
+    db.exec("BEGIN TRANSACTION");
+    inTx_ = true;
+}
+
+void DatabaseManager::commit()
+{
+    if (!inTx_) return;
+    db.exec("COMMIT");
+    inTx_ = false;
+}
+
+void DatabaseManager::rollback()
+{
+    if (!inTx_) return;
+    try { db.exec("ROLLBACK"); } catch (...) {}
+    inTx_ = false;
+}
+
+// ==================== Appointments ====================
+
+std::optional<AppointmentRecord> DatabaseManager::getAppointmentById(AppointmentId appointmentId)
+{
+    if (appointmentId <= 0) return std::nullopt;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+            "scheduledAt, status, note, createdAt FROM appointments WHERE id = ?");
+        stmt.bind(1, static_cast<int64_t>(appointmentId));
+        if (stmt.executeStep()) {
+            AppointmentRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.appointmentId = r.id;
+            r.customerId = stmt.getColumn(1).getInt64();
+            r.mechanicId = stmt.getColumn(2).getInt64();
+            r.vehicleId = stmt.getColumn(3).getInt64();
+            r.symptomFormId = stmt.getColumn(4).getInt64();
+            r.scheduledAt = stmt.getColumn(5).getText();
+            r.status = static_cast<AppointmentStatus>(stmt.getColumn(6).getInt());
+            r.note = stmt.getColumn(7).getText();
+            r.createdAt = stmt.getColumn(8).getText();
+            return r;
+        }
+        return std::nullopt;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("getAppointmentById failed: ") + e.what());
+    }
+}
+
+std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(MechanicId mechanicId)
+{
+    std::vector<AppointmentRecord> results;
+    if (mechanicId <= 0) return results;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+            "scheduledAt, status, note, createdAt FROM appointments WHERE mechanicId = ?");
+        stmt.bind(1, static_cast<int64_t>(mechanicId));
+        while (stmt.executeStep()) {
+            AppointmentRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.appointmentId = r.id;
+            r.customerId = stmt.getColumn(1).getInt64();
+            r.mechanicId = stmt.getColumn(2).getInt64();
+            r.vehicleId = stmt.getColumn(3).getInt64();
+            r.symptomFormId = stmt.getColumn(4).getInt64();
+            r.scheduledAt = stmt.getColumn(5).getText();
+            r.status = static_cast<AppointmentStatus>(stmt.getColumn(6).getInt());
+            r.note = stmt.getColumn(7).getText();
+            r.createdAt = stmt.getColumn(8).getText();
+            results.push_back(std::move(r));
+        }
+        return results;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("listAppointmentsForMechanic failed: ") + e.what());
+    }
+}
+
+bool DatabaseManager::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
+{
+    if (appointmentId <= 0) return false;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "UPDATE appointments SET status = ? WHERE id = ?");
+        stmt.bind(1, static_cast<int>(status));
+        stmt.bind(2, static_cast<int64_t>(appointmentId));
+        return stmt.exec() > 0;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("updateAppointmentStatus failed: ") + e.what());
+    }
+}
+
+bool DatabaseManager::cancelAppointment(AppointmentId appointmentId, const std::string &reason)
+{
+    if (appointmentId <= 0) return false;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "UPDATE appointments SET status = ?, note = ? WHERE id = ?");
+        stmt.bind(1, static_cast<int>(AppointmentStatus::CANCELLED));
+        stmt.bind(2, reason);
+        stmt.bind(3, static_cast<int64_t>(appointmentId));
+        return stmt.exec() > 0;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("cancelAppointment failed: ") + e.what());
+    }
+}
+
+// ==================== Symptom Forms (lookup) ====================
+
+std::optional<SymptomFormRecord> DatabaseManager::getSymptomFormById(SymptomFormId formId)
+{
+    // TODO: implement once symptom_forms table schema is finalised
+    if (formId <= 0) return std::nullopt;
+    return std::nullopt;
+}
+
+// ==================== Reviews ====================
+
+std::vector<ReviewRecord> DatabaseManager::listReviewsForMechanic(MechanicId mechanicId)
+{
+    std::vector<ReviewRecord> results;
+    if (mechanicId <= 0) return results;
+    try {
+        ensureReviewsSchema(db);
+        SQLite::Statement stmt(db,
+            "SELECT id, jobId, customerId, mechanicId, rating, comment, createdAt "
+            "FROM reviews WHERE mechanicId = ?");
+        stmt.bind(1, static_cast<int64_t>(mechanicId));
+        while (stmt.executeStep()) {
+            ReviewRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.jobId = stmt.getColumn(1).getInt64();
+            r.customerId = stmt.getColumn(2).getInt64();
+            r.mechanicId = stmt.getColumn(3).getInt64();
+            r.rating = stmt.getColumn(4).getInt();
+            r.comment = stmt.getColumn(5).getText();
+            r.createdAt = stmt.getColumn(6).getText();
+            results.push_back(std::move(r));
+        }
+        return results;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("listReviewsForMechanic failed: ") + e.what());
     }
 }
 

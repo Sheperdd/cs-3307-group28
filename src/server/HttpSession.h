@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "../engine/DatabaseManager.h"
+#include "ServiceContext.h"
 #include "endpoints/EndpointHandler.h"
 
 namespace beast = boost::beast;
@@ -24,10 +24,10 @@ class HttpSession : public std::enable_shared_from_this<HttpSession>
 public:
   /// @brief Constructs the session, taking ownership of the socket.
   /// @param socket   The accepted TCP socket for this client.
-  /// @param db       Reference to the shared DatabaseManager instance.
+  /// @param ctx      Reference to the shared ServiceContext (engine services + db).
   /// @param pool     Reference to the thread pool used for blocking DB operations.
   HttpSession(tcp::socket socket,
-              DatabaseManager &db,
+              ServiceContext &ctx,
               net::thread_pool &pool);
 
   /// @brief Starts the HTTP request/response loop as a coroutine.
@@ -46,7 +46,7 @@ private:
 
   tcp::socket socket_;        ///< The client socket
   beast::flat_buffer buffer_; ///< Read buffer for this connection
-  DatabaseManager &db_;       ///< Shared database manager
+  ServiceContext &ctx_;       ///< Shared service context (engine services + db)
   net::thread_pool &pool_;    ///< Thread pool for blocking DB work
 
   /// Maps URL prefixes (e.g. "users") to their endpoint handler
