@@ -1,5 +1,5 @@
 #include "DatabaseManager.h"
-#include "RecordsSerialization.h"
+#include <nlohmann/json.hpp>
 #include <iostream>
 #include <chrono>
 #include <ctime>
@@ -81,86 +81,14 @@ DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE 
 
 DatabaseManager::~DatabaseManager() {}
 
-// ==================== Legacy JSON API ====================
+// ==================== Utility methods ====================
 
-nlohmann::json DatabaseManager::getUserById(int userId)
-{
-    auto rec = getUserRecordById(userId);
-    if (!rec.has_value())
-        return {{"error", "User not found"}};
-    return json(*rec);
-}
-
-nlohmann::json DatabaseManager::getUserByEmail(const std::string &userEmail)
-{
-    auto rec = getUserRecordByEmail(userEmail);
-    if (!rec.has_value())
-        return {{"error", "User not found"}};
-    return json(*rec);
-}
-
-nlohmann::json DatabaseManager::getAllUsers()
-{
-    nlohmann::json arr = nlohmann::json::array();
-    try
-    {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers");
-        while (query.executeStep())
-        {
-            UserRecord u;
-            u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
-            arr.push_back(json(u));
-        }
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Get All Customers Error: " << e.what() << std::endl;
-    }
-    return arr;
-}
-
-bool DatabaseManager::updateUser(int userId, const std::string &name, const std::string &password)
-{
-    UserUpdate update;
-    update.email = name;
-    return updateUserRecord(static_cast<UserId>(userId), update);
-}
-
-bool DatabaseManager::updatePassword(int userId, const std::string &name, const std::string &newPassword)
-{
-    try
-    {
-        std::string sql = "UPDATE customers SET password = ?";
-        bool updateEmail = !name.empty();
-        if (updateEmail)
-            sql += ", email = ?";
-        sql += " WHERE id = ?";
-        SQLite::Statement query(db, sql);
-        int idx = 1;
-        query.bind(idx++, newPassword);
-        if (updateEmail)
-            query.bind(idx++, name);
-        query.bind(idx, userId);
-        query.exec();
-        return true;
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Update Password Error: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool DatabaseManager::deleteUser(int userId)
+bool DatabaseManager::deleteUser(UserId userId)
 {
     try
     {
         SQLite::Statement query(db, "DELETE FROM customers WHERE id = ?");
-        query.bind(1, userId);
+        query.bind(1, static_cast<int64_t>(userId));
         query.exec();
         return true;
     }
@@ -186,61 +114,6 @@ int DatabaseManager::getUserCount()
         std::cerr << "Get User Count Error: " << e.what() << std::endl;
     }
     return 0;
-}
-
-bool DatabaseManager::verifyLogin(const std::string &email, const std::string &password)
-{
-    try
-    {
-        SQLite::Statement query(db, "SELECT password FROM customers WHERE email = ?");
-        query.bind(1, email);
-        if (query.executeStep())
-        {
-            std::string storedHash = query.getColumn(0).getText();
-            return storedHash == password;
-        }
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Verify Login Error: " << e.what() << std::endl;
-    }
-    return false;
-}
-
-bool DatabaseManager::emailExists(const std::string &email)
-{
-    try
-    {
-        SQLite::Statement query(db, "SELECT 1 FROM customers WHERE email = ?");
-        query.bind(1, email);
-        if (query.executeStep())
-        {
-            return true;
-        }
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Email Exists Error: " << e.what() << std::endl;
-    }
-    return false;
-}
-
-void DatabaseManager::resetDatabase()
-{
-    try
-    {
-        db.exec("DROP TABLE IF EXISTS customers");
-        db.exec("CREATE TABLE customers ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "email TEXT, "
-                "password TEXT, "
-                "role INTEGER, "
-                "createdAt TEXT)");
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Reset Database Error: " << e.what() << std::endl;
-    }
 }
 
 // ==================== Record-oriented User CRUD ====================
@@ -920,39 +793,6 @@ std::vector<TimeSlot> DatabaseManager::getMechanicAvailability(MechanicId mechan
     }
 }
 
-// ==================== Mechanic helpers (Legacy JSON) ====================
-
-nlohmann::json DatabaseManager::userRecordToJson(const UserRecord &u) const
-{
-    return json(u);
-}
-
-nlohmann::json DatabaseManager::getAllByRole(UserRole role) const
-{
-    nlohmann::json arr = nlohmann::json::array();
-    try
-    {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE role = ?");
-        query.bind(1, static_cast<int>(role));
-
-        while (query.executeStep())
-        {
-            UserRecord u;
-            u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
-            arr.push_back(json(u));
-        }
-    }
-    catch (std::exception &e)
-    {
-        std::cerr << "Get All By Role Error: " << e.what() << std::endl;
-    }
-    return arr;
-}
-
 // ==================== Convenience wrappers ====================
 
 bool DatabaseManager::addUser(const std::string &name, const std::string &email, const std::string &password)
@@ -965,23 +805,111 @@ bool DatabaseManager::addMechanic(const std::string &name, const std::string &em
     return createUser(name, email, password, UserRole::MECHANIC) != -1;
 }
 
-nlohmann::json DatabaseManager::getMechanicById(int userId)
+bool DatabaseManager::verifyLogin(const std::string &email, const std::string &password)
 {
-    auto rec = getUserRecordById(userId);
-    if (!rec.has_value() || rec->role != UserRole::MECHANIC)
-        return {{"error", "Mechanic not found"}};
-    return json(*rec);
+    auto rec = getUserRecordByEmail(email);
+    if (!rec.has_value())
+        return false;
+    return rec->passwordHash == password;
 }
 
-nlohmann::json DatabaseManager::getMechanicByEmail(const std::string &userEmail)
+bool DatabaseManager::emailExists(const std::string &email)
 {
-    auto rec = getUserRecordByEmail(userEmail);
-    if (!rec.has_value() || rec->role != UserRole::MECHANIC)
-        return {{"error", "Mechanic not found"}};
-    return json(*rec);
+    return getUserRecordByEmail(email).has_value();
 }
 
-nlohmann::json DatabaseManager::getAllMechanics()
+void DatabaseManager::resetDatabase()
 {
-    return getAllByRole(UserRole::MECHANIC);
+    try
+    {
+        db.exec("DROP TABLE IF EXISTS customers");
+        db.exec("CREATE TABLE IF NOT EXISTS customers ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "email TEXT, "
+                "password TEXT, "
+                "role INTEGER, "
+                "createdAt TEXT)");
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "Reset Database Error: " << e.what() << std::endl;
+    }
+}
+
+bool DatabaseManager::updatePasswordHash(UserId userId, const std::string &newHash)
+{
+    try
+    {
+        SQLite::Statement query(db, "UPDATE customers SET password = ? WHERE id = ?");
+        query.bind(1, newHash);
+        query.bind(2, static_cast<int64_t>(userId));
+        return query.exec() > 0;
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "Update Password Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<UserRecord> DatabaseManager::listAllUsers()
+{
+    std::vector<UserRecord> result;
+    try
+    {
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers");
+        while (query.executeStep())
+        {
+            UserRecord u;
+            u.id = query.getColumn(0).getInt64();
+            u.email = query.getColumn(1).getText();
+            u.passwordHash = query.getColumn(2).getText();
+            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
+            u.createdAt = query.getColumn(4).getText();
+            result.push_back(std::move(u));
+        }
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "List All Users Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::vector<UserRecord> DatabaseManager::listUsersByRole(UserRole role)
+{
+    std::vector<UserRecord> result;
+    try
+    {
+        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE role = ?");
+        query.bind(1, static_cast<int>(role));
+        while (query.executeStep())
+        {
+            UserRecord u;
+            u.id = query.getColumn(0).getInt64();
+            u.email = query.getColumn(1).getText();
+            u.passwordHash = query.getColumn(2).getText();
+            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
+            u.createdAt = query.getColumn(4).getText();
+            result.push_back(std::move(u));
+        }
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "List Users By Role Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::vector<MechanicRecord> DatabaseManager::listAllMechanics()
+{
+    return searchMechanics(MechanicSearchFilter{});
+}
+
+std::optional<MechanicRecord> DatabaseManager::getMechanicByEmail(const std::string &email)
+{
+    auto userOpt = getUserRecordByEmail(email);
+    if (!userOpt.has_value() || userOpt->role != UserRole::MECHANIC)
+        return std::nullopt;
+    return getMechanicByUserId(userOpt->id);
 }

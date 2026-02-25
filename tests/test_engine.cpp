@@ -107,7 +107,7 @@ TEST_F(DatabaseTests, DeleteUserDecreasesCount) {
     db.addUser("Sam", "Sam@gmail.com", "12345");
     EXPECT_EQ(db.getUserCount(), 1);
 
-    db.deleteUser(1);
+    db.deleteUser(static_cast<UserId>(1));
 
     EXPECT_EQ(db.getUserCount(), 0);
 

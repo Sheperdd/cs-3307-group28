@@ -1,4 +1,5 @@
 #include "Customers.h"
+#include "RecordsSerialization.h"
 
 using json = nlohmann::json;
 
@@ -21,18 +22,17 @@ CustomersHandler::handle(const http::request<http::string_body> &req,
                                             "Invalid user ID", req.version(), req.keep_alive());
         }
 
-        // Query the database for the user information
-        json result = db.getUserById(userId);
-        
-        // Check if the result contains an error
-        if (result.contains("error"))
+        // Query the database for the user record
+        auto userOpt = db.getUserRecordById(static_cast<UserId>(userId));
+
+        if (!userOpt.has_value())
         {
-            // Return a not found error if the user is not found
             co_return http_utils::make_error(http::status::not_found,
-                                            result["error"], req.version(), req.keep_alive());
+                                            "User not found", req.version(), req.keep_alive());
         }
 
         // Return the user information as a JSON response
+        json result = *userOpt;
         co_return http_utils::make_json_response(http::status::ok,
                                                 result, req.version(), req.keep_alive());
     }

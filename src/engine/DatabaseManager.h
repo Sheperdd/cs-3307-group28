@@ -5,7 +5,6 @@
 #include <vector>
 #include <optional>
 
-#include <nlohmann/json.hpp>
 #include <SQLiteCpp/SQLiteCpp.h>
 
 #include "Records.h"
@@ -35,26 +34,14 @@ public:
     void rollback();
     bool inTransaction() const;
 
-    // ---------------- Legacy JSON API (keep for server/tests) ----------------
+    // ---------------- Convenience wrappers ----------------
     bool addUser(const std::string &name, const std::string &email, const std::string &password);
     bool addMechanic(const std::string &name, const std::string &email, const std::string &password);
 
-    nlohmann::json getUserById(int userId);
-    nlohmann::json getUserByEmail(const std::string &userEmail);
-    nlohmann::json getAllUsers();
-
-    bool updateUser(int userId, const std::string &name, const std::string &password);
-    bool updatePassword(int userId, const std::string &name, const std::string &newPassword);
-    bool deleteUser(int userId);
-
+    int getUserCount();
     bool verifyLogin(const std::string &email, const std::string &password);
     bool emailExists(const std::string &email);
-    int getUserCount();
     void resetDatabase();
-
-    nlohmann::json getMechanicById(int userId);
-    nlohmann::json getMechanicByEmail(const std::string &userEmail);
-    nlohmann::json getAllMechanics();
 
     // ---------------- Record-oriented API (Engine core) ----------------
 
@@ -73,6 +60,8 @@ public:
 
     std::optional<UserRecord> getUserRecordById(UserId id);
     std::optional<UserRecord> getUserRecordByEmail(const std::string &email);
+    std::vector<UserRecord> listAllUsers();
+    std::vector<UserRecord> listUsersByRole(UserRole role);
     bool updateUserRecord(UserId id, const UserUpdate &update);
 
     // Vehicles
@@ -91,7 +80,9 @@ public:
 
     // Mechanics
     std::optional<MechanicRecord> getMechanicByUserId(UserId userId);
+    std::optional<MechanicRecord> getMechanicByEmail(const std::string &email);
     std::vector<MechanicRecord> searchMechanics(const MechanicSearchFilter &filters);
+    std::vector<MechanicRecord> listAllMechanics();
     bool updateMechanicProfile(MechanicId mechanicId, const MechanicUpdate &updates);
 
     bool setMechanicAvailability(MechanicId mechanicId, const std::vector<TimeSlot> &slots);
@@ -121,10 +112,6 @@ public:
 private:
     // ---------------- Helpers ----------------
     bool ensureConnected() const;
-
-    // Legacy helpers
-    nlohmann::json userRecordToJson(const UserRecord &u) const;
-    nlohmann::json getAllByRole(UserRole role) const;
 };
 
 #endif // DATABASEMANAGER_H
