@@ -39,7 +39,7 @@ void ProfitabilityEngine::setDefaultHourlyRate(int newRate)
 
 class TestCustomerValidator : public CustomerValidator {
 public:
-    bool validateCustomerProfile(const UserCreate&) override { return true; }
+    bool validateCustomerProfile(const CustomerCreate&) override { return true; }
     bool validateVehicle(const VehicleCreate& vehicle) override {
         return !vehicle.vin.empty() && !vehicle.model.empty();
     }
@@ -50,7 +50,7 @@ public:
 static void ensureTestSchema()
 {
     SQLite::Database db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-    db.exec("CREATE TABLE IF NOT EXISTS users ("
+    db.exec("CREATE TABLE IF NOT EXISTS customers ("
             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
             "email TEXT, "
             "password TEXT, "
