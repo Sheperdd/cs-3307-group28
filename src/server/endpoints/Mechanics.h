@@ -28,4 +28,13 @@ private:
   // PUT /mechanics/{id}/schedule
   net::awaitable<http::response<http::string_body>>
   setAvailability(MechanicId id, const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // GET /mechanics/{id}/jobs
+  net::awaitable<http::response<http::string_body>>
+  listOpenJobs(MechanicId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // GET /mechanics/{id}/appointments
+  net::awaitable<http::response<http::string_body>>
+  listMechanicAppts(MechanicId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // GET /mechanics/{id}/reviews
+  net::awaitable<http::response<http::string_body>>
+  listMechanicReviews(MechanicId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
 };

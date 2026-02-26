@@ -31,14 +31,9 @@ private:
   deleteVehicle(VehicleId id, unsigned ver, bool ka,
                 ServiceContext &ctx, net::thread_pool &pool);
 
-  // GET /user/{userId}/vehicles
+  // POST /vehicles/{vehicleId}/symptoms
   net::awaitable<http::response<http::string_body>>
-  listVehiclesForUser(UserId userId, unsigned ver, bool ka,
-                      ServiceContext &ctx, net::thread_pool &pool);
-
-  // POST /user/{userId}/vehicles
-  net::awaitable<http::response<http::string_body>>
-  createVehicle(UserId userId, const http::request<http::string_body> &req,
-                unsigned ver, bool ka,
-                ServiceContext &ctx, net::thread_pool &pool);
+  createSymptomForm(VehicleId vehicleId, const http::request<http::string_body> &req,
+                    unsigned ver, bool ka,
+                    ServiceContext &ctx, net::thread_pool &pool);
 };
