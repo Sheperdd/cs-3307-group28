@@ -65,6 +65,21 @@ AppointmentsHandler::createAppointment(const http::request<http::string_body> &r
                             unsigned ver, bool ka,
                             ServiceContext &ctx, net::thread_pool &pool)
 {
+  json body;
+  bool parseOk = true;
+  try
+  {
+    body = json::parse(req.body());
+  }
+  catch (...)
+  {
+    parseOk = false;
+  }
+  if (!parseOk)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     "Invalid JSON body", ver, ka);
+
+  
   // TODO: Refactor to use ctx.customerService.requestAppointment()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);

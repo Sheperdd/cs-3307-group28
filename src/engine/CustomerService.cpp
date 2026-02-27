@@ -319,7 +319,7 @@ bool CustomerService::deleteCustomerProfile(UserId customerId)
 	return false;
 }
 
-bool updateCustomerPasswordHash(UserId customerId, const std::string &newHash)
+bool CustomerService::updateCustomerPasswordHash(UserId customerId, const std::string &newHash)
 {
 	// TODO implement — validate new hash, call db->updatePasswordHash(customerId, newHash)
 	return false;
