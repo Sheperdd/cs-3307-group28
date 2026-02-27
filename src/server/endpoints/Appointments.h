@@ -16,14 +16,14 @@ private:
   // Helper methods for handling specific appointment-related operations
   // POST /appointments
   net::awaitable<http::response<http::string_body>>
-  create(const http::request<http::string_body> &req,
+  createAppointment(const http::request<http::string_body> &req,
          unsigned ver, bool ka,
          ServiceContext &ctx, net::thread_pool &pool);
   // GET /appointments/{id}
-  net::awaitable<http::response<http::string_body>> getById(AppointmentId id, unsigned ver, bool ka,
+  net::awaitable<http::response<http::string_body>> getAppointmentById(AppointmentId id, unsigned ver, bool ka,
                                                             ServiceContext &ctx, net::thread_pool &pool);
   // PATCH /appointments/{id}/status
-  net::awaitable<http::response<http::string_body>> updateStatus(AppointmentId id, const http::request<http::string_body> &req,
+  net::awaitable<http::response<http::string_body>> updateAppointmentStatus(AppointmentId id, const http::request<http::string_body> &req,
                                                                  unsigned ver, bool ka,
                                                                  ServiceContext &ctx, net::thread_pool &pool);
   // POST /appointments/{id}/job

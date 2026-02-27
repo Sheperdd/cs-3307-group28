@@ -18,7 +18,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
     if (req.method() == http::verb::post)
     {
       // POST /appointments
-      co_return co_await create(req, ver, ka, ctx, pool);
+      co_return co_await createAppointment(req, ver, ka, ctx, pool);
     }
     co_return http_utils::make_error(http::status::method_not_allowed,
                                      "Method not allowed", ver, ka);
@@ -30,7 +30,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
       if (id < 0)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid Appointment ID", ver, ka);
-      co_return co_await getById(id, ver, ka, ctx, pool);
+      co_return co_await getAppointmentById(id, ver, ka, ctx, pool);
     }
     co_return http_utils::make_error(http::status::method_not_allowed,
                                      "Method not allowed", ver, ka);
@@ -43,7 +43,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
     if (path_parts[2] == "status" && req.method() == http::verb::patch)
     {
       // PATCH /appointments/{id}/status
-      co_return co_await updateStatus(id, req, ver, ka, ctx, pool);
+      co_return co_await updateAppointmentStatus(id, req, ver, ka, ctx, pool);
     }
     if (path_parts[2] == "job" && req.method() == http::verb::post)
     {
@@ -61,7 +61,7 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
 
 // POST /appointments
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::create(const http::request<http::string_body> &req,
+AppointmentsHandler::createAppointment(const http::request<http::string_body> &req,
                             unsigned ver, bool ka,
                             ServiceContext &ctx, net::thread_pool &pool)
 {
@@ -72,8 +72,8 @@ AppointmentsHandler::create(const http::request<http::string_body> &req,
 
 // GET /appointments/{id}
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::getById(AppointmentId id, unsigned ver, bool ka,
-                             ServiceContext &ctx, net::thread_pool &pool)
+AppointmentsHandler::getAppointmentById(AppointmentId id, unsigned ver, bool ka,
+                                        ServiceContext &ctx, net::thread_pool &pool)
 {
   // TODO: Refactor to use ctx.customerService.getAppointment() or ctx.mechanicService.getAppointmentDetails()
   co_return http_utils::make_error(http::status::not_implemented,
@@ -82,7 +82,7 @@ AppointmentsHandler::getById(AppointmentId id, unsigned ver, bool ka,
 
 // PATCH /appointments/{id}/status
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::updateStatus(AppointmentId id, const http::request<http::string_body> &req,
+AppointmentsHandler::updateAppointmentStatus(AppointmentId id, const http::request<http::string_body> &req,
                                   unsigned ver, bool ka,
                                   ServiceContext &ctx, net::thread_pool &pool)
 {
