@@ -151,7 +151,7 @@ CustomersHandler::getUser(UserId userId, unsigned ver, bool ka,
     // TODO: Switch to ctx.customerService.getCustomerProfile() when available
     struct Result
     {
-        std::optional<UserRecord> record;
+        std::optional<CustomerDTO> user;
         std::string error;
     };
 
@@ -162,7 +162,7 @@ CustomersHandler::getUser(UserId userId, unsigned ver, bool ka,
             Result r;
             try
             {
-                r.record = ctx.db.getUserRecordById(userId);
+                r.user = ctx.customerService.getCustomerProfile(userId);
             }
             catch (const std::exception &e)
             {
@@ -175,18 +175,12 @@ CustomersHandler::getUser(UserId userId, unsigned ver, bool ka,
     if (!res.error.empty())
         co_return http_utils::make_error(http::status::internal_server_error,
                                          res.error, ver, ka);
-    if (!res.record.has_value())
+    if (!res.user.has_value())
         co_return http_utils::make_error(http::status::not_found,
                                          "User not found", ver, ka);
 
-    // Convert UserRecord to a safe DTO json (strip passwordHash)
-    const auto &u = *res.record;
-    json body = {
-        {"userId", u.id},
-        {"email", u.email},
-        {"role", u.role}, // uses RecordsSerialization UserRole to_json
-        {"createdAt", u.createdAt}};
-    co_return http_utils::make_json_response(http::status::ok, body, ver, ka);
+    co_return http_utils::make_json_response(http::status::ok,
+                                             json(*res.user), ver, ka);
 }
 
 // PATCH /users/{id}
