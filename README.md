@@ -146,43 +146,50 @@ Reviews
 - customerName
 
 ## Endpoints
-### 1. Users & Auth (`Users.cpp`)
 
-*Handles registration, login, and user profile management.*
+> **Design rule:** each handler file only owns routes whose first path
+> segment matches the key registered in `HttpSession::register_handlers()`.
+> For example, `GET /users/{id}/vehicles` starts with `users`, so it is
+> routed to `CustomersHandler` (Customers.cpp), **not** Vehicles.cpp.
+
+### 1. Users & Auth (`Customers.cpp`)
+
+*Handles registration, login, user profile management, and any `/users/{id}/…` nested routes.*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
-| **POST** | `/auth/register` | `registerUser` | `createUser` |
-| **POST** | `/auth/login` | `loginUser` | `getUserByUsername` (verify hash) |
+| **POST** | `/login` | `loginUser` | `getUserByUsername` (verify hash) |
 | **GET** | `/users/{id}` | `getUser` | `getUserByUsername` (or new `getById`) |
 | **PUT** | `/users/{id}` | `updateUser` | `updateUser` |
 | **PUT** | `/users/{id}/password` | `updatePassword` | `updatePasswordHash` |
 | **DELETE** | `/users/{id}` | `deleteUser` | `deleteUser` |
+| **GET** | `/users/{userId}/vehicles` | `listVehiclesForUser` | `listVehiclesForUser` |
+| **POST** | `/users/{userId}/vehicles` | `createVehicle` | `createVehicle` |
+| **GET** | `/users/{userId}/symptoms` | `listSymptomsForUser` | `listSymptomFormsForCustomer` |
+| **GET** | `/users/{userId}/appointments` | `listCustomerAppts` | `listAppointmentsForCustomer` |
+| **GET** | `/users/{userId}/reviews` | `listMyReviews` | `listReviewsForCustomer` |
 
 ---
 
 ### 2. Vehicles (`Vehicles.cpp`)
 
-*Nested under Users for creation/listing, but flat for updates.*
+*CRUD for vehicles and any `/vehicles/{id}/…` nested routes.*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
-| **GET** | `/users/{userId}/vehicles` | `listForUser` | `listVehiclesForUser` |
-| **POST** | `/users/{userId}/vehicles` | `createVehicle` | `createVehicle` |
 | **GET** | `/vehicles/{id}` | `getVehicle` | `getVehicleById` |
 | **PUT** | `/vehicles/{id}` | `updateVehicle` | `updateVehicle` |
 | **DELETE** | `/vehicles/{id}` | `deleteVehicle` | `deleteVehicle` |
+| **POST** | `/vehicles/{vehicleId}/symptoms` | `createForm` | `createSymptomForm` |
 
 ---
 
 ### 3. Symptom Forms (`Symptoms.cpp`)
 
-*Diagnostics are created for a specific vehicle.*
+*Direct symptom-form access (`/symptoms/…` routes only).*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
-| **GET** | `/users/{userId}/symptoms` | `listForUser` | `listSymptomFormsForCustomer` |
-| **POST** | `/vehicles/{vehicleId}/symptoms` | `createForm` | `createSymptomForm` |
 | **GET** | `/symptoms/{id}` | `getForm` | `getSymptomFormById` |
 | **PUT** | `/symptoms/{id}` | `updateForm` | `updateSymptomForm` |
 | **DELETE** | `/symptoms/{id}` | `deleteForm` | `deleteSymptomForm` |
@@ -191,7 +198,7 @@ Reviews
 
 ### 4. Mechanics (`Mechanics.cpp`)
 
-*Search and profile management for mechanics.*
+*Search, profile management, and any `/mechanics/{id}/…` nested routes.*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
@@ -200,32 +207,32 @@ Reviews
 | **PUT** | `/mechanics/{id}` | `updateProfile` | `updateMechanicProfile` |
 | **GET** | `/mechanics/{id}/schedule` | `getAvailability` | `getMechanicAvailability` |
 | **PUT** | `/mechanics/{id}/schedule` | `setAvailability` | `setMechanicAvailability` |
+| **GET** | `/mechanics/{id}/jobs` | `listOpenJobs` | `listOpenJobsForMechanic` |
+| **GET** | `/mechanics/{id}/appointments` | `listMechanicAppts` | `listAppointmentsForMechanic` |
+| **GET** | `/mechanics/{id}/reviews` | `listMechanicReviews` | `listReviewsForMechanic` |
 
 ---
 
 ### 5. Appointments (`Appointments.cpp`)
 
-*Scheduling logic.*
+*Scheduling logic (`/appointments/…` routes only).*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
 | **POST** | `/appointments` | `create` | `createAppointment` |
 | **GET** | `/appointments/{id}` | `getById` | `getAppointmentById` |
-| **GET** | `/users/{userId}/appointments` | `listCustomerAppts` | `listAppointmentsForCustomer` |
-| **GET** | `/mechanics/{id}/appointments` | `listMechanicAppts` | `listAppointmentsForMechanic` |
 | **PATCH** | `/appointments/{id}/status` | `updateStatus` | `updateAppointmentStatus` / `cancelAppointment` |
+| **POST** | `/appointments/{id}/job` | `startJob` | `createJobFromAppointment` |
 
 ---
 
 ### 6. Jobs (`Jobs.cpp`)
 
-*Active work tracking (The "Mechanic View").*
+*Active work tracking (`/jobs/…` routes only).*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
-| **POST** | `/appointments/{id}/job` | `startJob` | `createJobFromAppointment` |
 | **GET** | `/jobs/{id}` | `getJob` | `getJobById` |
-| **GET** | `/mechanics/{id}/jobs` | `listOpenJobs` | `listOpenJobsForMechanic` |
 | **PUT** | `/jobs/{id}/stage` | `updateStage` | `updateJobStage` |
 | **POST** | `/jobs/{id}/complete` | `completeJob` | `markJobComplete` |
 
@@ -233,11 +240,9 @@ Reviews
 
 ### 7. Reviews (`Reviews.cpp`)
 
-*Feedback system.*
+*Direct review access (`/reviews/…` routes only).*
 
 | HTTP Method | Endpoint | Controller Function | Database Function |
 | --- | --- | --- | --- |
 | **POST** | `/reviews` | `createReview` | `createReview` |
-| **GET** | `/users/{userId}/reviews` | `listMyReviews` | `listReviewsForCustomer` |
-| **GET** | `/mechanics/{id}/reviews` | `listMechanicReviews` | `listReviewsForMechanic` |
 | **DELETE** | `/reviews/{id}` | `deleteReview` | `deleteReview` |

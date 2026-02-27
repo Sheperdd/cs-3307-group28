@@ -11,4 +11,15 @@ public:
          const std::vector<std::string> &path_parts,
          ServiceContext &ctx,
          net::thread_pool &pool) override;
+
+private:
+    // GET /symptoms/{id}
+    net::awaitable<http::response<http::string_body>>
+    getForm(SymptomFormId formId, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+    // PUT /symptoms/{id}
+    net::awaitable<http::response<http::string_body>>
+    updateForm(SymptomFormId formId, const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+    // DELETE /symptoms/{id}
+    net::awaitable<http::response<http::string_body>>
+    deleteForm(SymptomFormId formId, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
 };

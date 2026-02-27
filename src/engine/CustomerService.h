@@ -10,9 +10,9 @@
 #include "Records.h"
 #include "DTO.h"
 
-
 // ----------- Validator Interface -----------
-class CustomerValidator {
+class CustomerValidator
+{
 public:
     virtual ~CustomerValidator() = default;
     virtual bool validateCustomerProfile(const CustomerCreate& profile) = 0;
@@ -23,43 +23,46 @@ public:
 };
 
 // ----------- CustomerService Class -----------
-class CustomerService {
+class CustomerService
+{
 private:
     // Private members
-    DatabaseManager* db;
-    RatingEngine& ratingEngine;
-    ProfitabilityEngine& profitabilityEngine;
-    CustomerValidator& validator;
+    DatabaseManager *db;
+    RatingEngine &ratingEngine;
+    ProfitabilityEngine &profitabilityEngine;
+    CustomerValidator &validator;
 
     // Private methods
     void validateOwnership(UserId customerId, VehicleId vehicleId);
     void validateFormOwnership(UserId customerId, SymptomFormId formId);
     bool canReviewJob(UserId customerId, JobId jobId);
-    std::vector<MechanicRecord> loadCandidateMechanics(const SymptomFormDTO& form, const MechanicSearchFilter& filters);
-    std::vector<MechanicMatch> scoreAndRank(const std::vector<MechanicRecord>& candidates, const SymptomFormDTO& form);
+    std::vector<MechanicRecord> loadCandidateMechanics(const SymptomFormDTO &form, const MechanicSearchFilter &filters);
+    std::vector<MechanicMatch> scoreAndRank(const std::vector<MechanicRecord> &candidates, const SymptomFormDTO &form);
 
 public:
     // Constructor
-    CustomerService(DatabaseManager* db, RatingEngine& ratingEngine, 
-                    ProfitabilityEngine& profitabilityEngine, CustomerValidator& validator);
+    CustomerService(DatabaseManager *db, RatingEngine &ratingEngine,
+                    ProfitabilityEngine &profitabilityEngine, CustomerValidator &validator);
 
     // Customer Profile Management
-    UserId createCustomerProfile(const CustomerCreate& profile);
+    UserId createCustomerProfile(const CustomerCreate &profile);
     CustomerDTO getCustomerProfile(UserId customerId);
-    bool updateCustomerProfile(UserId customerId, const CustomerProfileUpdate& updates);
+    bool updateCustomerProfile(UserId customerId, const CustomerProfileUpdate &updates);
+    bool deleteCustomerProfile(UserId customerId);
+    bool updateCustomerPasswordHash(UserId customerId, const std::string &newHash);
 
     // Vehicle Management
-    VehicleId addVehicle(UserId customerId, const VehicleCreate& vehicle);
+    VehicleId addVehicle(UserId customerId, const VehicleCreate &vehicle);
     VehicleDTO getVehicle(VehicleId vehicleId);
     std::vector<VehicleDTO> listVehicles(UserId customerId);
-    bool updateVehicle(VehicleId vehicleId, const VehicleUpdate& updates);
+    bool updateVehicle(VehicleId vehicleId, const VehicleUpdate &updates);
     bool removeVehicle(VehicleId vehicleId);
 
     // Symptom Form Management
-    SymptomFormId createSymptomForm(UserId customerId, VehicleId vehicleId, const SymptomFormCreate& form);
+    SymptomFormId createSymptomForm(UserId customerId, VehicleId vehicleId, const SymptomFormCreate &form);
     SymptomFormDTO getSymptomForm(SymptomFormId formId);
     std::vector<SymptomFormDTO> listSymptomForms(UserId customerId);
-    bool updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate& updates);
+    bool updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates);
     bool deleteSymptomForm(SymptomFormId formId);
 
     // Mechanic Discovery
@@ -70,7 +73,7 @@ public:
     // Appointment Management
     AppointmentId CustomerService::requestAppointment(AppointmentDTO appointment);
     bool confirmAppointment(AppointmentId appointmentId);
-    bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string& reason);
+    bool cancelAppointment(AppointmentId appointmentId, const std::string &reason);
     std::vector<AppointmentDTO> listAppointments(UserId customerId);
     AppointmentDTO getAppointment(AppointmentId appointmentId);
 
@@ -79,7 +82,7 @@ public:
     void unsubscribeFromJobUpdates(SubscriptionId subscriptionId);
 
     // Review Management
-    ReviewId submitReview(UserId customerId, JobId jobId, const ReviewCreate& review);
+    ReviewId submitReview(UserId customerId, JobId jobId, const ReviewCreate &review);
     std::vector<ReviewDTO> listMyReviews(UserId customerId);
     bool deleteMyReview(UserId customerId, ReviewId reviewId);
 };

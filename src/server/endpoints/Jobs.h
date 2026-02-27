@@ -11,4 +11,17 @@ public:
          const std::vector<std::string> &path_parts,
          ServiceContext &ctx,
          net::thread_pool &pool) override;
+
+private:
+  // GET /jobs/{id}
+  net::awaitable<http::response<http::string_body>>
+  getJob(JobId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // PUT /jobs/{id}/stage
+  net::awaitable<http::response<http::string_body>>
+  updateStage(JobId id, const http::request<http::string_body> &req,
+              unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // POST /jobs/{id}/complete
+  net::awaitable<http::response<http::string_body>>
+  completeJob(JobId id, const http::request<http::string_body> &req,
+              unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
 };

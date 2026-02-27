@@ -14,28 +14,45 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
   // Use a switch to determine which specific appointment-related operation to perform based on the URL path and HTTP method
   switch (path_parts.size())
   {
+  case 1:
+    if (req.method() == http::verb::post)
+    {
+      // POST /appointments
+      co_return co_await createAppointment(req, ver, ka, ctx, pool);
+    }
+    co_return http_utils::make_error(http::status::method_not_allowed,
+                                     "Method not allowed", ver, ka);
   case 2:
-    if(req.method() == http::verb::get)
+    if (req.method() == http::verb::get)
     {
       // GET /appointments/{id}
       AppointmentId id = http_utils::parse_int(path_parts[1]);
       if (id < 0)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid Appointment ID", ver, ka);
-      co_return co_await getById(id, ver, ka, ctx, pool);
+      co_return co_await getAppointmentById(id, ver, ka, ctx, pool);
     }
-    else if(req.method() == http::verb::patch)
+    co_return http_utils::make_error(http::status::method_not_allowed,
+                                     "Method not allowed", ver, ka);
+  case 3:
+  {
+    AppointmentId id = http_utils::parse_int(path_parts[1]);
+    if (id < 0)
+      co_return http_utils::make_error(http::status::bad_request,
+                                       "Invalid Appointment ID", ver, ka);
+    if (path_parts[2] == "status" && req.method() == http::verb::patch)
     {
       // PATCH /appointments/{id}/status
-      AppointmentId id = http_utils::parse_int(path_parts[1]);
-      if (id < 0)
-        co_return http_utils::make_error(http::status::bad_request,
-                                         "Invalid Appointment ID", ver, ka);
-      co_return co_await updateStatus(id, req, ver, ka, ctx, pool);
+      co_return co_await updateAppointmentStatus(id, req, ver, ka, ctx, pool);
     }
-  case 3:
-    co_return http_utils::make_error(http::status::not_implemented,
-                                     "Not implemented", ver, ka);
+    if (path_parts[2] == "job" && req.method() == http::verb::post)
+    {
+      // POST /appointments/{id}/job
+      co_return co_await startJob(id, req, ver, ka, ctx, pool);
+    }
+    co_return http_utils::make_error(http::status::not_found,
+                                     "Not found", ver, ka);
+  }
   default:
     co_return http_utils::make_error(http::status::not_found,
                                      "Not found", ver, ka);
@@ -44,52 +61,132 @@ AppointmentsHandler::handle(const http::request<http::string_body> &req,
 
 // POST /appointments
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::create(UserId userId, const http::request<http::string_body> &req,
-                            unsigned ver, bool ka,
-                            ServiceContext &ctx, net::thread_pool &pool)
+AppointmentsHandler::createAppointment(const http::request<http::string_body> &req,
+                                       unsigned ver, bool ka,
+                                       ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.customerService.requestAppointment()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  json body;
+  bool parseOk = true;
+  try
+  {
+    body = json::parse(req.body());
+  }
+  catch (...)
+  {
+    parseOk = false;
+  }
+  if (!parseOk)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     "Invalid JSON body", ver, ka);
+
+  // TODO implement actually calling the function
+  AppointmentCreate appointment;
+  try
+  {
+    appointment = body.get<AppointmentCreate>();
+  }
+  catch (const std::exception &e)
+  {
+    co_return http_utils::make_error(http::status::bad_request,
+                                     std::string("Bad appointment payload: ") + e.what(),
+                                     ver, ka);
+  }
+  struct Result
+  {
+    AppointmentId id{-1};
+    std::string error;
+    bool badRequest{false};
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, appointment]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.id = ctx.customerService.requestAppointment(appointment.customerId, appointment.mechanicId, appointment.formId, appointment.scheduledAt);
+        }
+        catch (const std::invalid_argument &e)
+        {
+          r.error = e.what();
+          r.badRequest = true;
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (res.badRequest)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     res.error, ver, ka);
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  co_return http_utils::make_json_response(http::status::created,
+                                           json{{"appointmentId", res.id}}, ver, ka);
 }
 
 // GET /appointments/{id}
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::getById(AppointmentId id, unsigned ver, bool ka,
-                             ServiceContext &ctx, net::thread_pool &pool)
+AppointmentsHandler::getAppointmentById(AppointmentId id, unsigned ver, bool ka,
+                                        ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.customerService.getAppointment() or ctx.mechanicService.getAppointmentDetails()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
-}
+  struct Result
+  {
+    std::optional<AppointmentDTO> appointment;
+    std::string error;
+  };
 
-// GET /users/{userId}/appointments
-net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::listCustomerAppts(UserId userId, unsigned ver, bool ka,
-                                       ServiceContext &ctx, net::thread_pool &pool)
-{
-  // TODO: Refactor to use ctx.customerService.listAppointments()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
-}
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, id]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.appointment = ctx.customerService.getAppointment(id);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+  if (!res.appointment.has_value())
+    co_return http_utils::make_error(http::status::not_found,
+                                     "Appointment not found", ver, ka);
 
-// GET /mechanics/{mechanicId}/appointments
-net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::listMechanicAppts(UserId mechanicId, unsigned ver, bool ka,
-                                       ServiceContext &ctx, net::thread_pool &pool)
-{
-  // TODO: Refactor to use ctx.mechanicService.listAppointments()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(*res.appointment), ver, ka);
 }
 
 // PATCH /appointments/{id}/status
 net::awaitable<http::response<http::string_body>>
-AppointmentsHandler::updateStatus(AppointmentId id, const http::request<http::string_body> &req,
-                                  unsigned ver, bool ka,
-                                  ServiceContext &ctx, net::thread_pool &pool)
+AppointmentsHandler::updateAppointmentStatus(AppointmentId id, const http::request<http::string_body> &req,
+                                             unsigned ver, bool ka,
+                                             ServiceContext &ctx, net::thread_pool &pool)
 {
   // TODO: Refactor to use ctx.mechanicService.AcceptAppointment() / declineAppointment()
+  co_return http_utils::make_error(http::status::not_implemented,
+                                   "Not implemented", ver, ka);
+}
+
+// POST /appointments/{id}/job
+net::awaitable<http::response<http::string_body>>
+AppointmentsHandler::startJob(AppointmentId id, const http::request<http::string_body> &req,
+                              unsigned ver, bool ka,
+                              ServiceContext &ctx, net::thread_pool &pool)
+{
+  // TODO: Refactor to use ctx.mechanicService.createJobFromAppointment()
   co_return http_utils::make_error(http::status::not_implemented,
                                    "Not implemented", ver, ka);
 }

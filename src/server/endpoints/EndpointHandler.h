@@ -8,6 +8,8 @@
 
 #include "../http_utils.h"
 #include "../ServiceContext.h"
+#include "DTOSerialization.h"
+#include "RecordsSerialization.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;

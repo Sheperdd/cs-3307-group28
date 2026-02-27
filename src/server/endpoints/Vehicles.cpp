@@ -33,24 +33,18 @@ VehiclesHandler::handle(const http::request<http::string_body> &req,
         }
     }
 
-    // /users/{userID}/vehicles  —  GET (list), POST (create)
-    if (path_parts.size() == 3)
+    // /vehicles/{vehicleId}/symptoms  —  POST (create symptom form)
+    if (path_parts.size() == 3 && path_parts[2] == "symptoms")
     {
-        UserId userId = http_utils::parse_int(path_parts[1]);
-        if (userId < 0)
+        VehicleId vehicleId = http_utils::parse_int(path_parts[1]);
+        if (vehicleId < 0)
             co_return http_utils::make_error(http::status::bad_request,
-                                             "Invalid User ID", ver, ka);
+                                             "Invalid Vehicle ID", ver, ka);
+        if (req.method() == http::verb::post)
+            co_return co_await createSymptomForm(vehicleId, req, ver, ka, ctx, pool);
 
-        switch (req.method())
-        {
-        case http::verb::get:
-            co_return co_await listVehiclesForUser(userId, ver, ka, ctx, pool);
-        case http::verb::post:
-            co_return co_await createVehicle(userId, req, ver, ka, ctx, pool);
-        default:
-            co_return http_utils::make_error(http::status::method_not_allowed,
-                                             "Method not allowed", ver, ka);
-        }
+        co_return http_utils::make_error(http::status::method_not_allowed,
+                                         "Method not allowed", ver, ka);
     }
 
     co_return http_utils::make_error(http::status::not_found,
@@ -151,91 +145,14 @@ VehiclesHandler::deleteVehicle(VehicleId id, unsigned ver, bool ka,
                                              json{{"message", "Vehicle deleted"}}, ver, ka);
 }
 
-// GET /user/{userId}/vehicles
+// POST /vehicles/{vehicleId}/symptoms
 net::awaitable<http::response<http::string_body>>
-VehiclesHandler::listVehiclesForUser(UserId userId, unsigned ver, bool ka,
-                                     ServiceContext &ctx, net::thread_pool &pool)
+VehiclesHandler::createSymptomForm(VehicleId vehicleId,
+                                   const http::request<http::string_body> &req,
+                                   unsigned ver, bool ka,
+                                   ServiceContext &ctx, net::thread_pool &pool)
 {
-    struct Result {
-        std::vector<VehicleDTO> vehicles;
-        std::string error;
-        bool badRequest{false};
-    };
-
-    auto res = co_await net::co_spawn(
-        pool,
-        [&ctx, userId]() -> net::awaitable<Result>
-        {
-            Result r;
-            try {
-                r.vehicles = ctx.customerService.listVehicles(userId);
-            } catch (const std::invalid_argument &e) {
-                r.error = e.what();
-                r.badRequest = true;
-            }
-            co_return r;
-        },
-        net::use_awaitable);
-
-    if (res.badRequest)
-        co_return http_utils::make_error(http::status::bad_request,
-                                         res.error, ver, ka);
-
-    json arr = json::array();
-    for (const auto &v : res.vehicles)
-        arr.push_back(json(v));
-
-    co_return http_utils::make_json_response(http::status::ok,
-                                             arr, ver, ka);
-}
-
-// POST /user/{userId}/vehicles
-net::awaitable<http::response<http::string_body>>
-VehiclesHandler::createVehicle(UserId userId,
-                               const http::request<http::string_body> &req,
-                               unsigned ver, bool ka,
-                               ServiceContext &ctx, net::thread_pool &pool)
-{
-    json body;
-    bool parseOk = true;
-    try { body = json::parse(req.body()); }
-    catch (...) { parseOk = false; }
-    if (!parseOk)
-        co_return http_utils::make_error(http::status::bad_request,
-                                         "Invalid JSON body", ver, ka);
-
-    VehicleCreate vehicle = body.get<VehicleCreate>();
-
-    struct Result {
-        VehicleId id{-1};
-        std::string error;
-        bool badRequest{false};
-    };
-
-    auto res = co_await net::co_spawn(
-        pool,
-        [&ctx, userId, vehicle]() -> net::awaitable<Result>
-        {
-            Result r;
-            try {
-                r.id = ctx.customerService.addVehicle(userId, vehicle);
-            } catch (const std::invalid_argument &e) {
-                r.error = e.what();
-                r.badRequest = true;
-            } catch (const std::runtime_error &e) {
-                r.error = e.what();
-            }
-            co_return r;
-        },
-        net::use_awaitable);
-
-    if (res.badRequest)
-        co_return http_utils::make_error(http::status::bad_request,
-                                         res.error, ver, ka);
-    if (res.id < 0)
-        co_return http_utils::make_error(http::status::internal_server_error,
-                                         res.error, ver, ka);
-
-    co_return http_utils::make_json_response(http::status::created,
-                                             json{{"id", res.id}}, ver, ka);
+    // TODO: Refactor to use ctx.customerService.createSymptomForm()
+    co_return http_utils::make_error(http::status::not_implemented,
+                                     "Not implemented", ver, ka);
 }
