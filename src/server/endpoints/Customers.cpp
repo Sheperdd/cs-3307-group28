@@ -320,7 +320,7 @@ CustomersHandler::updatePassword(UserId userId,
             Result r;
             try
             {
-                r.ok = ctx.db.updatePasswordHash(userId, newPassword);
+                r.ok = ctx.customerService.updateCustomerPasswordHash(userId, newPassword);
             }
             catch (const std::exception &e)
             {
