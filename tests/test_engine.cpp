@@ -45,6 +45,7 @@ public:
     }
     bool validateSymptomForm(const SymptomFormCreate&) override { return true; }
     bool validateReview(const ReviewCreate&) override { return true; }
+    bool validateAppointment(const AppointmentCreate&) override { return true; }
 };
 
 static void ensureTestSchema()

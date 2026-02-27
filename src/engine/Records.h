@@ -128,7 +128,7 @@ struct AppointmentRecord {
     AppointmentId appointmentId{};
     VehicleId vehicleId{};
     std::string createdAt;
-    std::string symptomForm;
+    std::string symptomForm; // what
     SymptomFormId symptomFormId;
 };
 

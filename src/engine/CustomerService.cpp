@@ -369,20 +369,15 @@ bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 
 // TODO: Implement appointment request
 
-AppointmentId CustomerService::requestAppointment(AppointmentDTO appointment){
+AppointmentId CustomerService::requestAppointment(AppointmentCreate appointment){
     if(!validator.validateAppointment(appointment))     throw std::invalid_argument("requestAppointment: invalid appointment");
     AppointmentRecord rec{};
     rec.customerId = appointment.customerId;
     rec.mechanicId = appointment.mechanicId;
-    rec.appointmentId = appointment.appointmentId;
     rec.symptomFormId = appointment.formId;
     rec.vehicleId = appointment.vehicleId;
     rec.scheduledAt = appointment.scheduledAt;
-    rec.status = appointment.status;
     rec.note = appointment.note;
-    rec.createdAt = appointment.createdAt;
-    rec.symptomForm = appointment.symptoms;
-
     AppointmentId id = db->createAppointment(rec);
     return id;  
 }
@@ -424,8 +419,25 @@ bool CustomerService::confirmAppointment(AppointmentId appointmentId)
     }
     return db->updateAppointmentStatus(appointmentId,AppointmentStatus::CONFIRMED);
 }
-std::vector<AppointmentDTO> listAppointments(UserId customerId){
-    
+
+std::vector<AppointmentDTO> CustomerService::listAppointments(UserId customerId)
+{
+    auto appointments = db->listAppointmentsForCustomer(customerId);
+    std::vector<AppointmentDTO> dtos;
+    for (const auto &appointment : appointments) {
+        AppointmentDTO dto{};
+        dto.appointmentId = appointment.appointmentId;
+        dto.customerId = appointment.customerId;
+        dto.mechanicId = appointment.mechanicId;
+        dto.formId = appointment.symptomFormId;
+        dto.vehicleId = appointment.vehicleId;
+        dto.scheduledAt = appointment.scheduledAt;
+        dto.status = appointment.status;
+        dto.note = appointment.note;
+        dto.createdAt = appointment.createdAt;
+        dtos.push_back(dto);
+    }
+    return dtos;
 }
 
 

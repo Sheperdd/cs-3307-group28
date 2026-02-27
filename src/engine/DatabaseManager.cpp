@@ -907,6 +907,11 @@ std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(Mech
     }
 }
 
+std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForCustomer(UserId customerId) {
+    // TODO: implement once appointments schema is finalised
+    return {};
+}
+
 bool DatabaseManager::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
 {
     if (appointmentId <= 0) return false;

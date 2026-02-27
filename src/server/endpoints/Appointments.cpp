@@ -105,7 +105,7 @@ AppointmentsHandler::createAppointment(const http::request<http::string_body> &r
         Result r;
         try
         {
-          r.id = ctx.customerService.requestAppointment(appointment.customerId, appointment.mechanicId, appointment.formId, appointment.scheduledAt);
+          r.id = ctx.customerService.requestAppointment(appointment);
         }
         catch (const std::invalid_argument &e)
         {

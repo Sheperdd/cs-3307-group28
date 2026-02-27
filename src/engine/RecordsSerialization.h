@@ -246,10 +246,10 @@ inline void from_json(const json &j, MechanicRecord &m)
 inline void to_json(json &j, const AppointmentRecord &a)
 {
   j = json{
-      {"id", a.id},
+      {"id", a.appointmentId},
       {"customerId", a.customerId},
       {"mechanicId", a.mechanicId},
-      {"formId", a.formId},
+      {"formId", a.symptomFormId},
       {"scheduledAt", a.scheduledAt},
       {"status", a.status}, // uses AppointmentStatus to_json
       {"note", a.note}};
@@ -257,10 +257,10 @@ inline void to_json(json &j, const AppointmentRecord &a)
 
 inline void from_json(const json &j, AppointmentRecord &a)
 {
-  a.id = j.value("id", AppointmentId{0});
+  a.appointmentId = j.value("id", AppointmentId{0});
   a.customerId = j.value("customerId", UserId{0});
   a.mechanicId = j.value("mechanicId", MechanicId{0});
-  a.formId = j.value("formId", SymptomFormId{0});
+  a.symptomFormId = j.value("formId", SymptomFormId{0});
   a.scheduledAt = j.value("scheduledAt", std::string{});
   a.status = j.value("status", AppointmentStatus::REQUESTED);
   a.note = j.value("note", std::string{});
