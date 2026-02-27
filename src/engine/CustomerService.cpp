@@ -230,3 +230,62 @@ void CustomerService::unsubscribeFromJobUpdates(SubscriptionId subscriptionId)
 	}
 	// No-op: subscription storage not implemented in current engine.
 }
+
+AppointmentId CustomerService::requestAppointment(AppointmentDTO appointment){
+	if(!validator.validateAppointment(appointment))		throw std::invalid_argument("requestAppointment: invalid appointment");
+	AppointmentRecord rec{};
+	rec.customerId = appointment.customerId;
+	rec.mechanicId = appointment.mechanicId;
+	rec.appointmentId = appointment.appointmentId;
+	rec.symptomFormId = appointment.formId;
+	rec.vehicleId = appointment.vehicleId;
+	rec.scheduledAt = appointment.scheduledAt;
+	rec.status = appointment.status;
+	rec.note = appointment.note;
+	rec.createdAt = appointment.createdAt;
+	rec.symptomForm = appointment.symptoms;
+
+	AppointmentId id = db->createAppointment(rec);
+	return id;	
+}
+bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string& reason){
+	if(appointmentId <=0) throw std::invalid_argument("cancelAppointment: invalid appointmentId");
+	bool result = db->cancelAppointment(appointmentId, reason);
+	return result;
+
+}
+AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId){
+	if(appointmentId <= 0) {
+		throw std::invalid_argument("getAppointment: invalid appointmentId");
+	}
+
+	auto appointment = db->getAppointmentById(appointmentId);
+	if(!appointment.has_value()) {
+		throw std::runtime_error("getAppointment: appointment not found");
+	}
+
+	AppointmentDTO dto{};
+	dto.appointmentId = appointment->appointmentId;
+	dto.customerId = appointment->customerId;
+	dto.mechanicId = appointment->mechanicId;
+	dto.formId = appointment->symptomFormId;
+	dto.vehicleId = appointment->vehicleId;
+	dto.scheduledAt = appointment->scheduledAt;
+	dto.status = appointment->status;
+	dto.note = appointment->note;
+	dto.createdAt = appointment->createdAt;
+	dto.symptoms = appointment->symptomForm;
+
+	return dto;
+}
+
+bool CustomerService::confirmAppointment(AppointmentId appointmentId)
+{
+	if (appointmentId <= 0) {
+		throw std::invalid_argument("confirmAppointment: invalid appointmentId");
+	}
+	return db->updateAppointmentStatus(appointmentId,AppointmentStatus::CONFIRMED);
+}
+std::vector<AppointmentDTO> listAppointments(UserId customerId){
+	
+}

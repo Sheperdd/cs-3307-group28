@@ -120,10 +120,8 @@ struct MechanicUpdate {
 
 // Appointment
 struct AppointmentRecord {
-    AppointmentId id{};
     UserId customerId{};
     MechanicId mechanicId{};
-    SymptomFormId formId{};
     std::string scheduledAt; // ISO datetime
     AppointmentStatus status{ AppointmentStatus::REQUESTED };
     std::string note;

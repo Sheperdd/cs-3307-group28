@@ -19,6 +19,7 @@ public:
     virtual bool validateVehicle(const VehicleCreate& vehicle) = 0;
     virtual bool validateSymptomForm(const SymptomFormCreate& form) = 0;
     virtual bool validateReview(const ReviewCreate& review) = 0;
+    virtual bool validateAppointment(const AppointmentDTO& appointment) = 0;
 };
 
 // ----------- CustomerService Class -----------
@@ -67,10 +68,9 @@ public:
     PriceEstimate requestEstimate(MechanicId mechanicId, SymptomFormId formId);
 
     // Appointment Management
-    AppointmentId requestAppointment(UserId customerId, MechanicId mechanicId, 
-                                     SymptomFormId formId, const std::vector<TimeSlot>& preferredSlots);
+    AppointmentId CustomerService::requestAppointment(AppointmentDTO appointment);
     bool confirmAppointment(AppointmentId appointmentId);
-    bool cancelAppointment(AppointmentId appointmentId, const std::string& reason);
+    bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string& reason);
     std::vector<AppointmentDTO> listAppointments(UserId customerId);
     AppointmentDTO getAppointment(AppointmentId appointmentId);
 

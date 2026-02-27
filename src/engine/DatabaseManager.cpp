@@ -859,8 +859,8 @@ std::optional<AppointmentRecord> DatabaseManager::getAppointmentById(Appointment
         stmt.bind(1, static_cast<int64_t>(appointmentId));
         if (stmt.executeStep()) {
             AppointmentRecord r;
-            r.id = stmt.getColumn(0).getInt64();
-            r.appointmentId = r.id;
+            r.appointmentId = stmt.getColumn(0).getInt64();
+            r.appointmentId = r.appointmentId;
             r.customerId = stmt.getColumn(1).getInt64();
             r.mechanicId = stmt.getColumn(2).getInt64();
             r.vehicleId = stmt.getColumn(3).getInt64();
@@ -889,8 +889,8 @@ std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(Mech
         stmt.bind(1, static_cast<int64_t>(mechanicId));
         while (stmt.executeStep()) {
             AppointmentRecord r;
-            r.id = stmt.getColumn(0).getInt64();
-            r.appointmentId = r.id;
+            r.appointmentId = stmt.getColumn(0).getInt64();
+            r.appointmentId = r.appointmentId;
             r.customerId = stmt.getColumn(1).getInt64();
             r.mechanicId = stmt.getColumn(2).getInt64();
             r.vehicleId = stmt.getColumn(3).getInt64();
@@ -1096,3 +1096,22 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByEmail(const std::str
         return std::nullopt;
     return getMechanicByUserId(userOpt->id);
 }
+  AppointmentId DatabaseManager::createAppointment(const AppointmentRecord &req){
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "INSERT INTO appointments (customerId, mechanicId, vehicleId, symptomFormId, scheduledAt, status, note, createdAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+        stmt.bind(1, static_cast<int64_t>(req.customerId));
+        stmt.bind(2, static_cast<int64_t>(req.mechanicId));
+        stmt.bind(3, static_cast<int64_t>(req.vehicleId));
+        stmt.bind(4, static_cast<int64_t>(req.symptomFormId));
+        stmt.bind(5, req.scheduledAt);
+        stmt.bind(6, static_cast<int>(req.status));
+        stmt.bind(7, req.note);
+        stmt.exec();
+        return static_cast<AppointmentId>(db.getLastInsertRowid());
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("createAppointment failed: ") + e.what());
+    }
+  }

@@ -27,4 +27,11 @@ public:
     {
         return review.rating >= 1 && review.rating <= 5;
     }
+    bool validateAppointment(const AppointmentDTO& appointment) override
+    {
+        return appointment.customerId > 0 && appointment.mechanicId > 0
+            && appointment.formId > 0 && appointment.vehicleId > 0;
+    }
+    
+
 };
