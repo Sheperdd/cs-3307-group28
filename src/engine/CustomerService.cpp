@@ -368,40 +368,66 @@ bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 // =====================================================================
 
 // TODO: Implement appointment request
-AppointmentId CustomerService::requestAppointment(UserId customerId, MechanicId mechanicId,
-												  SymptomFormId formId, const std::string &scheduledAt)
-{
-	// TODO: Implement — validate inputs, create AppointmentRecord, call db->createAppointment()
-	return -1;
+
+AppointmentId CustomerService::requestAppointment(AppointmentDTO appointment){
+    if(!validator.validateAppointment(appointment))     throw std::invalid_argument("requestAppointment: invalid appointment");
+    AppointmentRecord rec{};
+    rec.customerId = appointment.customerId;
+    rec.mechanicId = appointment.mechanicId;
+    rec.appointmentId = appointment.appointmentId;
+    rec.symptomFormId = appointment.formId;
+    rec.vehicleId = appointment.vehicleId;
+    rec.scheduledAt = appointment.scheduledAt;
+    rec.status = appointment.status;
+    rec.note = appointment.note;
+    rec.createdAt = appointment.createdAt;
+    rec.symptomForm = appointment.symptoms;
+
+    AppointmentId id = db->createAppointment(rec);
+    return id;  
+}
+bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string& reason){
+    if(appointmentId <=0) throw std::invalid_argument("cancelAppointment: invalid appointmentId");
+    bool result = db->cancelAppointment(appointmentId, reason);
+    return result;
+
+}
+AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId){
+    if(appointmentId <= 0) {
+        throw std::invalid_argument("getAppointment: invalid appointmentId");
+    }
+
+    auto appointment = db->getAppointmentById(appointmentId);
+    if(!appointment.has_value()) {
+        throw std::runtime_error("getAppointment: appointment not found");
+    }
+
+    AppointmentDTO dto{};
+    dto.appointmentId = appointment->appointmentId;
+    dto.customerId = appointment->customerId;
+    dto.mechanicId = appointment->mechanicId;
+    dto.formId = appointment->symptomFormId;
+    dto.vehicleId = appointment->vehicleId;
+    dto.scheduledAt = appointment->scheduledAt;
+    dto.status = appointment->status;
+    dto.note = appointment->note;
+    dto.createdAt = appointment->createdAt;
+    dto.symptoms = appointment->symptomForm;
+
+    return dto;
 }
 
-// TODO: Implement appointment confirmation
 bool CustomerService::confirmAppointment(AppointmentId appointmentId)
 {
-	// TODO: Implement — call db->updateAppointmentStatus(appointmentId, CONFIRMED)
-	return false;
+    if (appointmentId <= 0) {
+        throw std::invalid_argument("confirmAppointment: invalid appointmentId");
+    }
+    return db->updateAppointmentStatus(appointmentId,AppointmentStatus::CONFIRMED);
+}
+std::vector<AppointmentDTO> listAppointments(UserId customerId){
+    
 }
 
-// TODO: Implement appointment cancellation
-bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string &reason)
-{
-	// TODO: Implement — call db->cancelAppointment(appointmentId, reason)
-	return false;
-}
-
-// TODO: Implement list appointments for customer
-std::vector<AppointmentDTO> CustomerService::listAppointments(UserId customerId)
-{
-	// TODO: Implement — call db->listAppointmentsForCustomer(), convert to DTOs
-	return {};
-}
-
-// TODO: Implement get single appointment
-AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId)
-{
-	// TODO: Implement — call db->getAppointmentById(), convert to AppointmentDTO
-	return {};
-}
 
 // =====================================================================
 //  Review Management stubs
