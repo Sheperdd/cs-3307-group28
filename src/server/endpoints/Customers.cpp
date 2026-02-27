@@ -259,7 +259,7 @@ CustomersHandler::deleteUser(UserId userId, unsigned ver, bool ka,
             Result r;
             try
             {
-                r.ok = ctx.db.deleteUser(userId);
+                r.ok = ctx.customerService.deleteCustomerProfile(userId);
             }
             catch (const std::exception &e)
             {

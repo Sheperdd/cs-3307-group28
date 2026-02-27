@@ -313,6 +313,11 @@ bool CustomerService::updateCustomerProfile(UserId customerId, const CustomerPro
 	return false;
 }
 
+bool CustomerService::deleteCustomerProfile(UserId customerId)
+{	
+	// TODO implement — call db->deleteUser(customerId)
+	return false;
+}
 // =====================================================================
 //  Symptom Form Management stubs
 // =====================================================================

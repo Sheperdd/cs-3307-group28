@@ -46,6 +46,7 @@ public:
     UserId createCustomerProfile(const CustomerCreate& profile);
     CustomerDTO getCustomerProfile(UserId customerId);
     bool updateCustomerProfile(UserId customerId, const CustomerProfileUpdate& updates);
+    bool deleteCustomerProfile(UserId customerId);
 
     // Vehicle Management
     VehicleId addVehicle(UserId customerId, const VehicleCreate& vehicle);
