@@ -71,7 +71,7 @@ public:
 
     // Appointment Management
     AppointmentId requestAppointment(UserId customerId, MechanicId mechanicId,
-                                     SymptomFormId formId, const std::vector<TimeSlot> &preferredSlots);
+                                     SymptomFormId formId, const std::string &scheduledAt);
     bool confirmAppointment(AppointmentId appointmentId);
     bool cancelAppointment(AppointmentId appointmentId, const std::string &reason);
     std::vector<AppointmentDTO> listAppointments(UserId customerId);

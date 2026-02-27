@@ -1,6 +1,4 @@
 #include "Customers.h"
-#include "DTOSerialization.h"
-#include "RecordsSerialization.h"
 
 // =====================================================================
 //  Main router — dispatches to private sub-handler coroutines
@@ -148,7 +146,6 @@ net::awaitable<http::response<http::string_body>>
 CustomersHandler::getUser(UserId userId, unsigned ver, bool ka,
                           ServiceContext &ctx, net::thread_pool &pool)
 {
-    // TODO: Switch to ctx.customerService.getCustomerProfile() when available
     struct Result
     {
         std::optional<CustomerDTO> user;

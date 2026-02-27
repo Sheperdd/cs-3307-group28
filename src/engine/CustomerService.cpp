@@ -369,7 +369,7 @@ bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 
 // TODO: Implement appointment request
 AppointmentId CustomerService::requestAppointment(UserId customerId, MechanicId mechanicId,
-												  SymptomFormId formId, const std::vector<TimeSlot> &preferredSlots)
+												  SymptomFormId formId, const std::string &scheduledAt)
 {
 	// TODO: Implement — validate inputs, create AppointmentRecord, call db->createAppointment()
 	return -1;

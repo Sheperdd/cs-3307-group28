@@ -199,6 +199,27 @@ inline void from_json(const json &j, AppointmentDTO &a)
     a.severity = j.value("severity", 0);
 }
 
+inline void from_json(const json &j, AppointmentCreate &a)
+{
+    j.at("customerId").get_to(a.customerId);
+    j.at("mechanicId").get_to(a.mechanicId);
+    j.at("formId").get_to(a.formId);
+    j.at("vehicleId").get_to(a.vehicleId);
+    j.at("scheduledAt").get_to(a.scheduledAt);
+    a.note = j.value("note", std::string{});
+}
+
+inline void to_json(json &j, const AppointmentCreate &a)
+{
+    j = json{
+        {"customerId", a.customerId},
+        {"mechanicId", a.mechanicId},
+        {"formId", a.formId},
+        {"vehicleId", a.vehicleId},
+        {"scheduledAt", a.scheduledAt},
+        {"note", a.note}};
+}
+
 // ----------- ReviewCreate (frontend → server) -----------
 inline void from_json(const json &j, ReviewCreate &r)
 {
