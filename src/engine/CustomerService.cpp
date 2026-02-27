@@ -8,8 +8,8 @@
 #include <cmath>
 
 CustomerService::CustomerService(DatabaseManager *db, RatingEngine &ratingEngine,
-																 ProfitabilityEngine &profitabilityEngine, CustomerValidator &validator)
-		: db(db), ratingEngine(ratingEngine), profitabilityEngine(profitabilityEngine), validator(validator)
+								 ProfitabilityEngine &profitabilityEngine, CustomerValidator &validator)
+	: db(db), ratingEngine(ratingEngine), profitabilityEngine(profitabilityEngine), validator(validator)
 {
 	if (!this->db)
 	{
@@ -155,10 +155,10 @@ std::vector<MechanicMatch> CustomerService::findMatchingMechanics(UserId custome
 	}
 
 	std::sort(matches.begin(), matches.end(),
-						[](const MechanicMatch &a, const MechanicMatch &b)
-						{
-							return a.matchScore > b.matchScore;
-						});
+			  [](const MechanicMatch &a, const MechanicMatch &b)
+			  {
+				  return a.matchScore > b.matchScore;
+			  });
 
 	return matches;
 }
@@ -314,8 +314,14 @@ bool CustomerService::updateCustomerProfile(UserId customerId, const CustomerPro
 }
 
 bool CustomerService::deleteCustomerProfile(UserId customerId)
-{	
+{
 	// TODO implement — call db->deleteUser(customerId)
+	return false;
+}
+
+bool updateCustomerPasswordHash(UserId customerId, const std::string &newHash)
+{
+	// TODO implement — validate new hash, call db->updatePasswordHash(customerId, newHash)
 	return false;
 }
 // =====================================================================
@@ -363,7 +369,7 @@ bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 
 // TODO: Implement appointment request
 AppointmentId CustomerService::requestAppointment(UserId customerId, MechanicId mechanicId,
-																									SymptomFormId formId, const std::vector<TimeSlot> &preferredSlots)
+												  SymptomFormId formId, const std::vector<TimeSlot> &preferredSlots)
 {
 	// TODO: Implement — validate inputs, create AppointmentRecord, call db->createAppointment()
 	return -1;
