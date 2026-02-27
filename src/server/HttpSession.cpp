@@ -22,9 +22,7 @@
 HttpSession::HttpSession(tcp::socket socket,
                          ServiceContext &ctx,
                          net::thread_pool &pool)
-    : socket_(std::move(socket))
-    , ctx_(ctx)
-    , pool_(pool)
+    : socket_(std::move(socket)), ctx_(ctx), pool_(pool)
 {
     register_handlers();
 }
@@ -35,14 +33,15 @@ HttpSession::HttpSession(tcp::socket socket,
 
 void HttpSession::register_handlers()
 {
-    handlers_["users"]        = std::make_unique<CustomersHandler>();
-    handlers_["login"]        = std::make_unique<CustomersHandler>();   // login shares user logic
+    handlers_["users"] = std::make_unique<CustomersHandler>();
+    handlers_["auth"] = std::make_unique<CustomersHandler>();  // register + login
+    handlers_["login"] = std::make_unique<CustomersHandler>(); // legacy alias
     handlers_["appointments"] = std::make_unique<AppointmentsHandler>();
-    handlers_["jobs"]         = std::make_unique<JobsHandler>();
-    handlers_["mechanics"]    = std::make_unique<MechanicsHandler>();
-    handlers_["reviews"]      = std::make_unique<ReviewsHandler>();
-    handlers_["symptoms"]     = std::make_unique<SymptomsHandler>();
-    handlers_["vehicles"]     = std::make_unique<VehiclesHandler>();
+    handlers_["jobs"] = std::make_unique<JobsHandler>();
+    handlers_["mechanics"] = std::make_unique<MechanicsHandler>();
+    handlers_["reviews"] = std::make_unique<ReviewsHandler>();
+    handlers_["symptoms"] = std::make_unique<SymptomsHandler>();
+    handlers_["vehicles"] = std::make_unique<VehiclesHandler>();
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +71,7 @@ HttpSession::route_request(const http::request<http::string_body> &req)
 
 net::awaitable<void> HttpSession::run()
 {
-    auto self = shared_from_this();   // prevent destruction while coroutine is active
+    auto self = shared_from_this(); // prevent destruction while coroutine is active
     try
     {
         for (;;)
