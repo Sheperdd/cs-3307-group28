@@ -48,34 +48,12 @@ public:
     bool validateAppointment(const AppointmentCreate&) override { return true; }
 };
 
-static void ensureTestSchema()
-{
-    SQLite::Database db("torquedesk.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-    db.exec("CREATE TABLE IF NOT EXISTS customers ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "email TEXT, "
-            "password TEXT, "
-            "role INTEGER, "
-            "createdAt TEXT)");
-
-    db.exec("CREATE TABLE IF NOT EXISTS vehicles ("
-            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "ownerUserId INTEGER, "
-            "vin TEXT, "
-            "make TEXT, "
-            "model TEXT, "
-            "year INTEGER, "
-            "mileage INTEGER DEFAULT 0, "
-            "createdAt TEXT)");
-}
-
 // This runs before EACH test to give us a clean slate
 class DatabaseTests : public ::testing::Test {
 protected:
     void SetUp() override {
         // Delete the DB file so we start fresh every time
         std::remove("torquedesk.db");
-        ensureTestSchema();
     }
 };
 
@@ -271,17 +249,61 @@ TEST_F(DatabaseTests, CustomerServiceRequestEstimate) {
 TEST_F(DatabaseTests, CustomerServiceGetJobStatus) {
     DatabaseManager db;
 
+    auto customerId = db.createUser("Cust4", "cust4@torquedesk.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("Mech4", "mech4@torquedesk.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mechanicUpdate;
+    mechanicUpdate.displayName = std::string("Robin");
+    mechanicUpdate.shopName = std::string("Robin Auto");
+    mechanicUpdate.hourlyRate = 100.0;
+    EXPECT_TRUE(db.updateMechanicProfile(mechanicUserId, mechanicUpdate));
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VINJOB1";
+    vehicle.make = "Mazda";
+    vehicle.model = "3";
+    vehicle.year = 2021;
+    vehicle.mileage = 1000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(
+        rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)"
+    );
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Rattle noise from front axle");
+    symptomInsert.bind(4, 3);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+    ASSERT_GT(symptomFormId, 0);
+
+    AppointmentRecord req{};
+    req.customerId = customerId;
+    req.mechanicId = mechanicUserId;
+    req.vehicleId = vehicleId;
+    req.symptomFormId = symptomFormId;
+    req.scheduledAt = "2026-03-01T10:00:00Z";
+    req.status = AppointmentStatus::REQUESTED;
+    req.note = "Please inspect before test drive";
+
+    auto appointmentId = db.createAppointment(req);
+    ASSERT_GT(appointmentId, 0);
+
     RatingEngine rating(db, 30);
     ProfitabilityEngine profitability(db, 100, 0.13);
     TestCustomerValidator validator;
     CustomerService service(&db, rating, profitability, validator);
 
-    auto jobId = db.createJobFromAppointment(1);
+    auto jobId = db.createJobFromAppointment(appointmentId);
     ASSERT_GT(jobId, 0);
 
     auto status = service.getJobStatus(jobId);
     EXPECT_EQ(status.jobId, jobId);
-    EXPECT_EQ(status.appointmentId, 1);
+    EXPECT_EQ(status.appointmentId, appointmentId);
 
     EXPECT_THROW(service.getJobStatus(0), std::invalid_argument);
 }
