@@ -119,6 +119,16 @@ bool CustomerService::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
 	{
 		return false;
 	}
+	// This check must happen for all functions before we proceed with the rest of the function
+	auto vehicle = db->getVehicleById(vehicleId);
+	if (!vehicle.has_value())
+	{
+		throw std::runtime_error("updateVehicle: vehicle not found");
+	}
+	if (vehicle->ownerUserId != customerId)
+	{
+		throw std::runtime_error("updateVehicle: user does not own vehicle");
+	}
 
 	return db->updateVehicle(vehicleId, updates);
 }
