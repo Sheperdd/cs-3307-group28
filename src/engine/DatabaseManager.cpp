@@ -71,7 +71,7 @@ static void ensureMechanicsSchema(SQLite::Database& db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS mechanics ("
-        "mechanicId INTEGER PRIMARY KEY, "
+        "id INTEGER PRIMARY KEY, "
         "userId INTEGER NOT NULL UNIQUE, "
         "displayName TEXT, "
         "shopName TEXT, "
@@ -90,7 +90,7 @@ static void ensureMechanicAvailabilitySchema(SQLite::Database& db)
         "mechanicId INTEGER NOT NULL, "
         "start TEXT NOT NULL, "
         "end TEXT NOT NULL, "
-        "FOREIGN KEY(mechanicId) REFERENCES mechanics(mechanicId) ON DELETE CASCADE ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE CASCADE ON UPDATE CASCADE, "
         "UNIQUE(mechanicId, start, end))"
     );
     db.exec("CREATE INDEX IF NOT EXISTS idx_mech_avail_mechanic_start_end ON mechanic_availability(mechanicId, start, end)");
@@ -113,7 +113,7 @@ static void ensureJobsSchema(SQLite::Database& db)
         "completedAt TEXT, "
         "completionNote TEXT, "
         "FOREIGN KEY(appointmentId) REFERENCES appointments(id) ON DELETE CASCADE ON UPDATE CASCADE, "
-        "FOREIGN KEY(mechanicId) REFERENCES mechanics(mechanicId) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
     );
@@ -137,7 +137,7 @@ static void ensureAppointmentsSchema(SQLite::Database& db)
         "note TEXT, "
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
-        "FOREIGN KEY(mechanicId) REFERENCES mechanics(mechanicId) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(symptomFormId) REFERENCES symptom_forms(id) ON DELETE SET NULL ON UPDATE CASCADE)"
     );
@@ -161,7 +161,7 @@ static void ensureReviewsSchema(SQLite::Database& db)
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE, "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
-        "FOREIGN KEY(mechanicId) REFERENCES mechanics(mechanicId) ON DELETE RESTRICT ON UPDATE CASCADE)"
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
     );
     db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_mechanic ON reviews(mechanicId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customerId)");
@@ -707,7 +707,7 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByUserId(UserId userId
 
         SQLite::Statement stmt(
             db,
-            "SELECT mechanicId, userId, displayName, shopName, hourlyRate, specialties "
+            "SELECT id, userId, displayName, shopName, hourlyRate, specialties "
             "FROM mechanics WHERE userId = ?"
         );
 
@@ -748,7 +748,7 @@ std::vector<MechanicRecord> DatabaseManager::searchMechanics(const MechanicSearc
         ensureMechanicsSchema(db);
 
         std::string sql =
-            "SELECT mechanicId, userId, displayName, shopName, hourlyRate, specialties FROM mechanics";
+            "SELECT id, userId, displayName, shopName, hourlyRate, specialties FROM mechanics";
 
         bool hasWhere = false;
         if (filters.specialty.has_value()) {
@@ -842,7 +842,7 @@ bool DatabaseManager::updateMechanicProfile(MechanicId mechanicId, const Mechani
         // No row updated; insert a new row for this mechanicId/userId
         SQLite::Statement insert(
             db,
-            "INSERT OR REPLACE INTO mechanics (mechanicId, userId, displayName, shopName, hourlyRate, specialties) "
+            "INSERT OR REPLACE INTO mechanics (id, userId, displayName, shopName, hourlyRate, specialties) "
             "VALUES (?, ?, ?, ?, ?, ?)"
         );
 

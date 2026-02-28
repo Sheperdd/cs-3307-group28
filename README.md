@@ -89,19 +89,19 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 - `customers`
   - `id` (PK), `name`, `phone`, `email` (UNIQUE), `password`, `role`, `createdAt`
 - `mechanics`
-  - `mechanicId` (PK), `userId` (UNIQUE, FK -> `customers.id`), `displayName`, `shopName`, `hourlyRate`, `specialties`
+  - `id` (PK), `userId` (UNIQUE, FK -> `customers.id`), `displayName`, `shopName`, `hourlyRate`, `specialties`
 - `vehicles`
   - `id` (PK), `ownerUserId` (FK -> `customers.id`), `vin` (UNIQUE), `make`, `model`, `year`, `mileage`, `createdAt`
 - `symptom_forms`
   - `id` (PK), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `description`, `severity`, `createdAt`
 - `mechanic_availability`
-  - `id` (PK), `mechanicId` (FK -> `mechanics.mechanicId`), `start`, `end`, UNIQUE(`mechanicId`,`start`,`end`)
+  - `id` (PK), `mechanicId` (FK -> `mechanics.id`), `start`, `end`, UNIQUE(`mechanicId`,`start`,`end`)
 - `appointments`
-  - `id` (PK), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.mechanicId`), `vehicleId` (FK -> `vehicles.id`), `symptomFormId` (FK -> `symptom_forms.id`), `scheduledAt`, `status`, `note`, `createdAt`
+  - `id` (PK), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.id`), `vehicleId` (FK -> `vehicles.id`), `symptomFormId` (FK -> `symptom_forms.id`), `scheduledAt`, `status`, `note`, `createdAt`
 - `jobs`
-  - `id` (PK), `appointmentId` (UNIQUE FK -> `appointments.id`), `mechanicId` (FK -> `mechanics.mechanicId`), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `stage`, `percentComplete`, `lastNote`, `updatedAt`, `startedAt`, `completedAt`, `completionNote`
+  - `id` (PK), `appointmentId` (UNIQUE FK -> `appointments.id`), `mechanicId` (FK -> `mechanics.id`), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `stage`, `percentComplete`, `lastNote`, `updatedAt`, `startedAt`, `completedAt`, `completionNote`
 - `reviews`
-  - `id` (PK), `jobId` (UNIQUE FK -> `jobs.id`), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.mechanicId`), `rating`, `comment`, `createdAt`
+  - `id` (PK), `jobId` (UNIQUE FK -> `jobs.id`), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.id`), `rating`, `comment`, `createdAt`
 
 ### DTO/computed fields (not stored as table columns)
 
