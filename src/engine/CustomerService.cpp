@@ -82,6 +82,17 @@ std::vector<VehicleDTO> CustomerService::listVehicles(UserId customerId)
 		throw std::invalid_argument("listVehicles: invalid customerId");
 	}
 
+	// This check must happen for all functions before we proceed with the rest of the function
+	auto user = db->getUserRecordById(customerId);
+	if (!user.has_value())
+	{
+		throw std::runtime_error("listVehicles: customer not found");
+	}
+	if (user->role != UserRole::CUSTOMER)
+	{
+		throw std::runtime_error("listVehicles: user is not a customer");
+	}
+
 	std::vector<VehicleDTO> result;
 	auto vehicles = db->listVehiclesForUser(customerId);
 	result.reserve(vehicles.size());
@@ -107,6 +118,16 @@ bool CustomerService::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
 	if (vehicleId <= 0)
 	{
 		return false;
+	}
+	// This check must happen for all functions before we proceed with the rest of the function
+	auto vehicle = db->getVehicleById(vehicleId);
+	if (!vehicle.has_value())
+	{
+		throw std::runtime_error("updateVehicle: vehicle not found");
+	}
+	if (vehicle->ownerUserId != customerId)
+	{
+		throw std::runtime_error("updateVehicle: user does not own vehicle");
 	}
 
 	return db->updateVehicle(vehicleId, updates);

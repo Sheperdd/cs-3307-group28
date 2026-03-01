@@ -5,9 +5,11 @@ Shane was also also here!
 Sviatoslav was also here!
 
 # TorqueDesk: Modern Automotive Repair Management Software
+
 Built for a third-year software engineering course, TorqueDesk is a platform designed to take the headache out of automotive repairs for both the mechanic and the vehicle owner.
 
 ## Environment Setup
+
 TorqueDesk uses **CMake (>= 3.20)**, **Ninja**, and **C++20**. Dependencies (nlohmann/json + GoogleTest) are downloaded automatically via CMake **FetchContent** (no manual installs needed beyond basic build tools).
 
 ---
@@ -15,14 +17,17 @@ TorqueDesk uses **CMake (>= 3.20)**, **Ninja**, and **C++20**. Dependencies (nlo
 ## Prerequisites
 
 ### macOS
+
 1. Install Xcode Command Line Tools:
-   - `xcode-select --install`
+  - `xcode-select --install`
 2. Install CMake + Ninja (Homebrew):
-   - `brew install cmake ninja`
+  - `brew install cmake ninja`
 
 ### Linux (native or WSL)
+
 Install a C++ toolchain, CMake, Ninja, and Git using your distro package manager.
 Example (Ubuntu/WSL):
+
 - `sudo apt update && sudo apt install -y build-essential cmake ninja-build git`
 
 > Note: First configure/build may take longer because CMake will fetch and build dependencies.
@@ -34,24 +39,31 @@ Example (Ubuntu/WSL):
 From the repo root:
 
 ### Configure
+
 - `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug`
 
 ### Build
+
 - `cmake --build build`
 
 ---
 
 ## Run Unit Tests
+
 After building:
+
 - `ctest --test-dir build --output-on-failure`
 
 If CTest doesn't find tests in your configuration, you can also run the test binary directly:
+
 - `./build/tests/UnitTests` (path may vary by generator/config)
 
 ---
 
 ## Visual Studio 2022 + WSL workflow (Windows)
+
 If you're using Visual Studio with a WSL toolchain:
+
 - Open the folder as a CMake project.
 - Ensure the selected kit/toolchain targets WSL.
 - Build with the default CMake targets (Ninja is typical for VS CMake projects).
@@ -59,91 +71,50 @@ If you're using Visual Studio with a WSL toolchain:
 ---
 
 ## Extra Working Notes
+
 - The database is always accessed through DatabaseManager, but since SQLite is blocking (can only do one call at a time), every DB call is offloaded to a net::thread_pool via net::co_spawn when working on the server.
 
 ## Potential Errors
+
 - db.updateVehicle() and db.deleteVehicle() return bool. If they return false because the ID doesn't exist (vs. a real DB error), the client still gets a 500 Internal Server Error instead of a 404 Not Found. The DB API doesn't distinguish these two cases.
 - No validation on VehicleRecord fields after deserialization
 After parsing, there is no validation (like if the year is reasonable, vin is non-empty, mileage is non-negative). Garbage data can be written directly to the db.
 
 ## Database Schema
-Appointments
-- appointmentId
-- customerId
-- mechanicId
-- formId
-- customerName
-- customerEmail
-- customerPhone
-- mechanicName
-- scheduledAt
-- status
-- note
-- createdAt
-- vehicleId
-- vehicleDescription
-- symptoms
-- severity
 
-Jobs
-- jobId
-- appointmentId
-- customerId
-- mechanicId
-- currentStage
-- percentComplete
-- lastNote
-- updatedAt
-- startedAt
-- completedAt
-- completionNote
-- customerName
-- customerEmail
-- vehicleDescription
-- isBlocked
+This section describes the physical SQLite schema (`DatabaseManager`), not response DTOs.
 
-Mechanics
-- mechanicId
-- userId
-- displayName
-- shopName
-- hourlyRate
-- specialties
-- averageRating
-- reviewCount
+### Physical tables
 
-Customers
-- userId
-- fullName
-- email
-- phone
-- createdAt
+- `customers`
+  - `id` (PK), `name`, `phone`, `email` (UNIQUE), `password`, `role`, `createdAt`
+- `mechanics`
+  - `id` (PK), `userId` (UNIQUE, FK -> `customers.id`), `displayName`, `shopName`, `hourlyRate`, `specialties`
+- `vehicles`
+  - `id` (PK), `ownerUserId` (FK -> `customers.id`), `vin` (UNIQUE), `make`, `model`, `year`, `mileage`, `createdAt`
+- `symptom_forms`
+  - `id` (PK), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `description`, `severity`, `createdAt`
+- `mechanic_availability`
+  - `id` (PK), `mechanicId` (FK -> `mechanics.id`), `start`, `end`, UNIQUE(`mechanicId`,`start`,`end`)
+- `appointments`
+  - `id` (PK), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.id`), `vehicleId` (FK -> `vehicles.id`), `symptomFormId` (FK -> `symptom_forms.id`), `scheduledAt`, `status`, `note`, `createdAt`
+- `jobs`
+  - `id` (PK), `appointmentId` (UNIQUE FK -> `appointments.id`), `mechanicId` (FK -> `mechanics.id`), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `stage`, `percentComplete`, `lastNote`, `updatedAt`, `startedAt`, `completedAt`, `completionNote`
+- `reviews`
+  - `id` (PK), `jobId` (UNIQUE FK -> `jobs.id`), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.id`), `rating`, `comment`, `createdAt`
 
-Symptoms
-- formId
-- customerId
-- vehicleId
-- description
-- severity
-- createdAt
+### DTO/computed fields (not stored as table columns)
 
-Vehicles
-- vehicleId
-- ownerId
-- vin
-- make
-- model
-- year
-- mileage
+- Appointment-facing extras: `customerName`, `customerEmail`, `customerPhone`, `mechanicName`, `vehicleDescription`, `symptoms`
+- Job-facing extras: `customerName`, `customerEmail`, `vehicleDescription`, `isBlocked`
+- Mechanic-facing extras: `averageRating`, `reviewCount`
+- Review-facing extras: `customerName`
 
-Reviews
-- reviewId
-- mechanicId
-- customerId
-- rating
-- comment
-- createdAt
-- customerName
+### Local DB note
+
+- The project currently initializes schema at startup with `CREATE TABLE IF NOT EXISTS`.
+- Existing local DB files may not pick up newer constraints/relations automatically.
+- During development, resetting/recreating `torquedesk.db` is expected when schema changes.
 
 ## Endpoints
 
@@ -154,20 +125,22 @@ Reviews
 
 ### 1. Users & Auth (`Customers.cpp`)
 
-*Handles registration, login, user profile management, and any `/users/{id}/…` nested routes.*
+*Registration/login, user profile routes, and `/users/{id}/...` nested routes.*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **POST** | `/login` | `loginUser` | `getUserByUsername` (verify hash) |
-| **GET** | `/users/{id}` | `getUser` | `getUserByUsername` (or new `getById`) |
-| **PUT** | `/users/{id}` | `updateUser` | `updateUser` |
-| **PUT** | `/users/{id}/password` | `updatePassword` | `updatePasswordHash` |
-| **DELETE** | `/users/{id}` | `deleteUser` | `deleteUser` |
-| **GET** | `/users/{userId}/vehicles` | `listVehiclesForUser` | `listVehiclesForUser` |
-| **POST** | `/users/{userId}/vehicles` | `createVehicle` | `createVehicle` |
-| **GET** | `/users/{userId}/symptoms` | `listSymptomsForUser` | `listSymptomFormsForCustomer` |
-| **GET** | `/users/{userId}/appointments` | `listCustomerAppts` | `listAppointmentsForCustomer` |
-| **GET** | `/users/{userId}/reviews` | `listMyReviews` | `listReviewsForCustomer` |
+| HTTP Method | Endpoint                       | Status |
+| ----------- | ------------------------------ | ------ |
+| **POST**    | `/auth/register`               | Not implemented (`501`) |
+| **POST**    | `/auth/login`                  | Not implemented (`501`) |
+| **GET**     | `/users/{id}`                  | Wired, but depends on WIP service method |
+| **PATCH**   | `/users/{id}`                  | Implemented (`updateUserRecord`) |
+| **DELETE**  | `/users/{id}`                  | Wired, but depends on WIP service method |
+| **PATCH**   | `/users/{id}/password`         | Wired, but depends on WIP service method |
+| **GET**     | `/users/{userId}/vehicles`     | Implemented |
+| **POST**    | `/users/{userId}/vehicles`     | Implemented |
+| **GET**     | `/users/{userId}/symptoms`     | Wired, but depends on WIP service method |
+| **GET**     | `/users/{userId}/appointments` | Wired, but depends on WIP service method |
+| **GET**     | `/users/{userId}/reviews`      | Wired, but depends on WIP service method |
+
 
 ---
 
@@ -175,12 +148,14 @@ Reviews
 
 *CRUD for vehicles and any `/vehicles/{id}/…` nested routes.*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **GET** | `/vehicles/{id}` | `getVehicle` | `getVehicleById` |
-| **PUT** | `/vehicles/{id}` | `updateVehicle` | `updateVehicle` |
-| **DELETE** | `/vehicles/{id}` | `deleteVehicle` | `deleteVehicle` |
-| **POST** | `/vehicles/{vehicleId}/symptoms` | `createForm` | `createSymptomForm` |
+
+| HTTP Method | Endpoint                         | Status |
+| ----------- | -------------------------------- | ------ |
+| **GET**     | `/vehicles/{id}`                 | Implemented |
+| **PATCH**   | `/vehicles/{id}`                 | Implemented |
+| **DELETE**  | `/vehicles/{id}`                 | Implemented |
+| **POST**    | `/vehicles/{vehicleId}/symptoms` | Not implemented (`501`) |
+
 
 ---
 
@@ -188,11 +163,13 @@ Reviews
 
 *Direct symptom-form access (`/symptoms/…` routes only).*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **GET** | `/symptoms/{id}` | `getForm` | `getSymptomFormById` |
-| **PUT** | `/symptoms/{id}` | `updateForm` | `updateSymptomForm` |
-| **DELETE** | `/symptoms/{id}` | `deleteForm` | `deleteSymptomForm` |
+
+| HTTP Method | Endpoint         | Status |
+| ----------- | ---------------- | ------ |
+| **GET**     | `/symptoms/{id}` | Not implemented (`501`) |
+| **PUT**     | `/symptoms/{id}` | Not implemented (`501`) |
+| **DELETE**  | `/symptoms/{id}` | Not implemented (`501`) |
+
 
 ---
 
@@ -200,16 +177,18 @@ Reviews
 
 *Search, profile management, and any `/mechanics/{id}/…` nested routes.*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **GET** | `/mechanics` | `search` | `searchMechanics` |
-| **GET** | `/mechanics/{id}` | `getProfile` | `getMechanicByUserId` |
-| **PUT** | `/mechanics/{id}` | `updateProfile` | `updateMechanicProfile` |
-| **GET** | `/mechanics/{id}/schedule` | `getAvailability` | `getMechanicAvailability` |
-| **PUT** | `/mechanics/{id}/schedule` | `setAvailability` | `setMechanicAvailability` |
-| **GET** | `/mechanics/{id}/jobs` | `listOpenJobs` | `listOpenJobsForMechanic` |
-| **GET** | `/mechanics/{id}/appointments` | `listMechanicAppts` | `listAppointmentsForMechanic` |
-| **GET** | `/mechanics/{id}/reviews` | `listMechanicReviews` | `listReviewsForMechanic` |
+
+| HTTP Method | Endpoint                       | Status |
+| ----------- | ------------------------------ | ------ |
+| **GET**     | `/mechanics`                   | Not implemented (`501`) |
+| **GET**     | `/mechanics/{id}`              | Not implemented (`501`) |
+| **PUT**     | `/mechanics/{id}`              | Not implemented (`501`) |
+| **GET**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) |
+| **PUT**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) |
+| **GET**     | `/mechanics/{id}/jobs`         | Not implemented (`501`) |
+| **GET**     | `/mechanics/{id}/appointments` | Not implemented (`501`) |
+| **GET**     | `/mechanics/{id}/reviews`      | Not implemented (`501`) |
+
 
 ---
 
@@ -217,12 +196,14 @@ Reviews
 
 *Scheduling logic (`/appointments/…` routes only).*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **POST** | `/appointments` | `create` | `createAppointment` |
-| **GET** | `/appointments/{id}` | `getById` | `getAppointmentById` |
-| **PATCH** | `/appointments/{id}/status` | `updateStatus` | `updateAppointmentStatus` / `cancelAppointment` |
-| **POST** | `/appointments/{id}/job` | `startJob` | `createJobFromAppointment` |
+
+| HTTP Method | Endpoint                    | Status |
+| ----------- | --------------------------- | ------ |
+| **POST**    | `/appointments`             | Implemented |
+| **GET**     | `/appointments/{id}`        | Implemented |
+| **PATCH**   | `/appointments/{id}/status` | Not implemented (`501`) |
+| **POST**    | `/appointments/{id}/job`    | Not implemented (`501`) |
+
 
 ---
 
@@ -230,11 +211,13 @@ Reviews
 
 *Active work tracking (`/jobs/…` routes only).*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **GET** | `/jobs/{id}` | `getJob` | `getJobById` |
-| **PUT** | `/jobs/{id}/stage` | `updateStage` | `updateJobStage` |
-| **POST** | `/jobs/{id}/complete` | `completeJob` | `markJobComplete` |
+
+| HTTP Method | Endpoint              | Status |
+| ----------- | --------------------- | ------ |
+| **GET**     | `/jobs/{id}`          | Not implemented (`501`) |
+| **PUT**     | `/jobs/{id}/stage`    | Not implemented (`501`) |
+| **POST**    | `/jobs/{id}/complete` | Not implemented (`501`) |
+
 
 ---
 
@@ -242,7 +225,10 @@ Reviews
 
 *Direct review access (`/reviews/…` routes only).*
 
-| HTTP Method | Endpoint | Controller Function | Database Function |
-| --- | --- | --- | --- |
-| **POST** | `/reviews` | `createReview` | `createReview` |
-| **DELETE** | `/reviews/{id}` | `deleteReview` | `deleteReview` |
+
+| HTTP Method | Endpoint        | Status |
+| ----------- | --------------- | ------ |
+| **POST**    | `/reviews`      | Not implemented (`501`) |
+| **DELETE**  | `/reviews/{id}` | Not implemented (`501`) |
+
+
