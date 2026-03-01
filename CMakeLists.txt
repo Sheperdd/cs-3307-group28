@@ -40,6 +40,6 @@ FetchContent_MakeAvailable(googletest)
 
 # --- Adding our code ---
 add_subdirectory(src/engine)
-# add_subdirectory(src/client)  Will uncomment this later when we start using Qt for front end
+add_subdirectory(src/client)
 add_subdirectory(tests)
 add_subdirectory(src/server)
