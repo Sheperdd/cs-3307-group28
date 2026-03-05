@@ -20,10 +20,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
     //creating pages
     landingPage = new LandingPage(this);
     signUpPage = new SignUpPage(this);
+    loginPage = new LoginPage(this);
 
     //creating stack in known order
     stack->addWidget(landingPage);
     stack->addWidget(signUpPage);
+    stack->addWidget(loginPage);
 
     //starting on the landing page
     stack -> setCurrentIndex(LandingIndex);
@@ -32,6 +34,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
     // From landing page to sign-up page
 connect(landingPage, &LandingPage::signUpRequested,
         this, &MainWindow::showSignUpPage);
+
+// From landing page to login page
+connect(landingPage, &LandingPage::loginRequested,
+        this, &MainWindow::showLoginPage);
 
 // From sign-up page back to landing page
 connect(signUpPage, &SignUpPage::backRequested,

@@ -113,7 +113,7 @@ MechanicsHandler::search(unsigned ver, bool ka, const http::request<http::string
 
   struct Result
   {
-    std::vector<MechanicRecord> mechanics;
+    std::vector<MechanicDTO> mechanics;
     std::string error;
   };
 
@@ -124,7 +124,7 @@ MechanicsHandler::search(unsigned ver, bool ka, const http::request<http::string
         Result r;
         try
         {
-          r.mechanics = ctx.db.searchMechanics(filter);
+          r.mechanics = ctx.mechanicService.searchMechanics(filter);
         }
         catch (const std::exception &e)
         {

@@ -4,6 +4,9 @@
 
 #include "MechanicService.h"
 #include <stdexcept>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 MechanicService::MechanicService(DatabaseManager& db) : db(db){}
 
@@ -87,6 +90,33 @@ bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicUpdat
 
 
     return db.updateMechanicProfile(mechanicId, update);
+}
+
+std::vector<MechanicDTO> MechanicService::searchMechanics(const MechanicSearchFilter &filters)
+{
+    // Implementation for searching mechanics based on filters
+    try {
+        auto records = db.searchMechanics(filters);
+        std::vector<MechanicDTO> results;
+        results.reserve(records.size());
+
+        for (const auto& rec : records) {
+            MechanicDTO dto;
+            dto.mechanicId = rec.userId;
+            dto.userId = rec.userId;
+            dto.displayName = rec.displayName;
+            dto.shopName = rec.shopName;
+            dto.hourlyRate = rec.hourlyRate;
+
+            dto.specialties = rec.specialties;
+            results.push_back(std::move(dto));
+        }
+
+        return results;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("searchMechanics failed: ") + e.what());
+    }
 }
 
 std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mechanicId)

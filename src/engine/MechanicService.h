@@ -49,6 +49,7 @@ public:
     void validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId);
     void publishJobUpdate(JobId jobId);
     std::vector<JobStage> buildDefaultStages();
+    std::vector<MechanicDTO> searchMechanics(const MechanicSearchFilter &filters); 
 
 };
 
