@@ -125,7 +125,7 @@ bool CustomerService::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
 	{
 		throw std::runtime_error("updateVehicle: vehicle not found");
 	}
-	if (vehicle->ownerUserId != customerId)
+	if (vehicle->ownerUserId != updates.customerId)
 	{
 		throw std::runtime_error("updateVehicle: user does not own vehicle");
 	}
