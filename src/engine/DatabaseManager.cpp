@@ -239,12 +239,12 @@ UserId DatabaseManager::createUser(const UserRecord &user)
         SQLite::Statement query(db,
                                 "INSERT INTO customers (name, phone, email, password, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)");
 
-        query.bind(1, name);
-        query.bind(2);
-        query.bind(3, email);
-        query.bind(4, passwordHash);
-        query.bind(5, static_cast<int>(role));
-        query.bind(6, nowISO());
+        query.bind(1, user.name);
+        query.bind(2, user.phone);
+        query.bind(3, user.email);
+        query.bind(4, user.passwordHash);
+        query.bind(5, static_cast<int>(user.role));
+        query.bind(6, user.createdAt);
 
         query.exec();
         return static_cast<UserId>(db.getLastInsertRowid());
