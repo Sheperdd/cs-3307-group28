@@ -1059,7 +1059,6 @@ bool DatabaseManager::cancelAppointment(AppointmentId appointmentId, const std::
 {
     if (appointmentId <= 0) return false;
     try {
-        ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
             "UPDATE appointments SET status = ?, note = ? WHERE id = ?");
         stmt.bind(1, static_cast<int>(AppointmentStatus::CANCELLED));

@@ -202,7 +202,7 @@ CustomersHandler::updateUser(UserId userId,
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid JSON body", ver, ka);
 
-    UserUpdate updates = body.get<UserUpdate>();
+    CustomerProfileUpdate updates = body.get<CustomerProfileUpdate>();
 
     struct Result
     {
@@ -212,12 +212,12 @@ CustomersHandler::updateUser(UserId userId,
 
     auto res = co_await net::co_spawn(
         pool,
-        [&ctx, userId, updates]() -> net::awaitable<Result>
+        [&ctx, userId, updates]() mutable -> net::awaitable<Result>
         {
             Result r;
             try
             {
-                r.ok = ctx.db.updateUserRecord(userId, updates);
+                r.ok = ctx.customerService.updateCustomerProfile(userId, updates);
             }
             catch (const std::exception &e)
             {

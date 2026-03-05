@@ -492,6 +492,14 @@ std::vector<AppointmentDTO> CustomerService::listAppointments(UserId customerId)
     return dtos;
 }
 
+bool CustomerService::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
+{
+	if (appointmentId <= 0) {
+		throw std::invalid_argument("updateAppointmentStatus: invalid appointmentId");
+	}
+	return db->updateAppointmentStatus(appointmentId, status);
+}
+
 
 // =====================================================================
 //  Review Management stubs

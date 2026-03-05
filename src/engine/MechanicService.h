@@ -27,8 +27,8 @@ public:
 
     bool updateMechanicProfile(MechanicId mechanicId, MechanicUpdate updates);
     std::vector<AppointmentDTO> listIncomingRequests(MechanicId mechanicId);
-    bool AcceptAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
-    bool declineAppointment(AppointmentId appointmentId, std::string reason);
+    bool AcceptAppointment(AppointmentId appointmentId);
+    bool declineAppointment(AppointmentId appointmentId, std::string note);
     bool RescheduleAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note);
 
     std::vector<AppointmentDTO> listAppointments(MechanicId mechanicId, DateRange dateRange);
@@ -46,7 +46,6 @@ public:
     void validateMechanicOwnAppointment(MechanicId mechanicId, AppointmentId appointmentId);
     void validateMechanicOwnsJob(MechanicId mechanicId, JobId jobId);
     void publishJobUpdate(JobId jobId);
-    bool slotConflicts(MechanicId mechanicId, const TimeSlot& timeSlot);
     std::vector<JobStage> buildDefaultStages();
 
 };

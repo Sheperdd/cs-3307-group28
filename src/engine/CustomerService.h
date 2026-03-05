@@ -76,6 +76,7 @@ public:
     bool cancelAppointment(AppointmentId appointmentId, const std::string &reason);
     std::vector<AppointmentDTO> listAppointments(UserId customerId);
     AppointmentDTO getAppointment(AppointmentId appointmentId);
+    bool updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status);
 
     // Job Tracking
     JobDTO getJobStatus(JobId jobId);

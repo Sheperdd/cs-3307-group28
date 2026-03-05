@@ -129,7 +129,7 @@ std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mec
 }
 
 
-bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot proposedSlot, std::string note){
+bool MechanicService::AcceptAppointment(AppointmentId appointmentId){
 
     auto appt = db.getAppointmentById(appointmentId);
 
@@ -139,10 +139,6 @@ bool MechanicService::AcceptAppointment(AppointmentId appointmentId, TimeSlot pr
 
     if (appt->status != AppointmentStatus::REQUESTED){
         throw std::runtime_error("Appointment was not requested");
-    }
-
-    if (slotConflicts(appt->mechanicId, proposedSlot)){
-        throw std::runtime_error("Selected time slot conflicts with existing appointments");
     }
 
     db.beginTransaction();
@@ -466,27 +462,6 @@ void MechanicService::publishJobUpdate(JobId jobId)
     // TODO: Implement notification system
     // This could publish to a message queue, send email/SMS, or update a real-time feed
     // For now, this is a placeholder
-}
-
-bool MechanicService::slotConflicts(MechanicId mechanicId, const TimeSlot& slot)
-{
-    // Get all confirmed appointments for this mechanic
-    auto appointments = db.listAppointmentsForMechanic(mechanicId);
-
-    for (const auto& appt : appointments) {
-        if (appt.status == AppointmentStatus::CONFIRMED ||
-            appt.status == AppointmentStatus::IN_PROGRESS) {
-
-            // Check if times overlap
-            // TODO: Implement proper time overlap logic based on TimeSlot structure
-            // This is a simplified placeholder
-            if (appt.scheduledAt == slot.start) {
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
 
 std::vector<JobStage> MechanicService::buildDefaultStages()
