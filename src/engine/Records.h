@@ -59,11 +59,13 @@ struct UserRecord {
     std::string passwordHash;
     UserRole role{ UserRole::CUSTOMER };
     std::string createdAt; // ISO string
-    int phone;
+    std::string phone;
 };
 
 struct UserUpdate {
+    std::optional<std::string> fullname;
     std::optional<std::string> email;
+    std::optional<std::string> phone;
     std::optional<UserRole> role;
 };
 

@@ -295,34 +295,65 @@ std::vector<MechanicMatch> CustomerService::scoreAndRank(const std::vector<Mecha
 // TODO: Implement customer profile creation
 UserId CustomerService::createCustomerProfile(const CustomerCreate &profile)
 {
-	// TODO: Implement — validate profile, call db->createUser(), return new UserId
-	return -1;
+	if(!validator.validateCustomerProfile(profile)) throw std::invalid_argument("createCustomerProfile: invalid profile");
+	UserRecord rec{};
+	rec.name = profile.fullName;
+	rec.email = profile.email;
+	rec.passwordHash = profile.passwordHash;
+	rec.role = UserRole::CUSTOMER;
+	rec.createdAt = profile.createdAt;
+	rec.phone = profile.phone;
+	
+	return db->createUser(rec);
 }
 
 // TODO: Implement get customer profile
 CustomerDTO CustomerService::getCustomerProfile(UserId customerId)
 {
-	// TODO: Implement — fetch user record from DB, convert to CustomerDTO
-	return {};
+	if (customerId <= 0)
+	{
+		throw std::invalid_argument("getCustomerProfile: invalid customerId");
+	}
+	auto user = db->getUserRecordById(customerId);
+	if (!user.has_value())
+	{
+		throw std::runtime_error("getCustomerProfile: user not found");
+	}
+	CustomerDTO dto;
+	dto.userId = user->id;
+	dto.email = user->email;
+	dto.fullName = user->name;
+	dto.phone = user->phone;
+	dto.createdAt = user->createdAt;
+	return dto;
 }
 
+
 // TODO: Implement customer profile update
-bool CustomerService::updateCustomerProfile(UserId customerId, const CustomerProfileUpdate &updates)
+bool CustomerService::updateCustomerProfile(UserId id,CustomerProfileUpdate &update)
 {
-	// TODO: Implement — validate updates, call db->updateUserRecord()
-	return false;
+	
+	if(id <= 0) throw std::invalid_argument("updateCustomerProfile: invalid customerId");
+	UserUpdate recUpdate{};
+	if(update.fullName.has_value()) recUpdate.fullname = update.fullName;
+	if(update.email.has_value()) recUpdate.email = update.email;
+	if(update.phone.has_value()) recUpdate.phone = update.phone;
+	return db->updateUserRecord(id, recUpdate);
 }
 
 bool CustomerService::deleteCustomerProfile(UserId customerId)
 {
-	// TODO implement — call db->deleteUser(customerId)
-	return false;
+	if (customerId <= 0)
+	{
+		throw std::invalid_argument("deleteCustomerProfile: invalid customerId");
+	}
+	return db->deleteUser(customerId);
 }
 
 bool CustomerService::updateCustomerPasswordHash(UserId customerId, const std::string &newHash)
 {
-	// TODO implement — validate new hash, call db->updatePasswordHash(customerId, newHash)
-	return false;
+	if(customerId <=0) throw std::invalid_argument("updateCustomerPasswordHash: invalid customerId");
+	return db->updatePasswordHash(customerId, newHash);
 }
 // =====================================================================
 //  Symptom Form Management stubs

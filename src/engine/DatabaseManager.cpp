@@ -148,20 +148,19 @@ int DatabaseManager::getUserCount()
 
 // ==================== Record-oriented User CRUD ====================
 
-UserId DatabaseManager::createUser(const std::string &name,
-                                   const std::string &email,
-                                   const std::string &passwordHash,
-                                   UserRole role)
+UserId DatabaseManager::createUser(const UserRecord &user)
 {
     try
     {
         SQLite::Statement query(db,
-                                "INSERT INTO customers (email, password, role, createdAt) VALUES (?, ?, ?, ?)");
+                                "INSERT INTO customers (email, password, role, createdAt, name, phone) VALUES (?, ?, ?, ?, ?, ?)");
 
-        query.bind(1, email);
-        query.bind(2, passwordHash);
-        query.bind(3, static_cast<int>(role));
-        query.bind(4, nowISO());
+        query.bind(1, user.email);
+        query.bind(2, user.passwordHash);
+        query.bind(3, static_cast<int>(user.role));
+        query.bind(4, user.createdAt);
+        query.bind(5, user.name);
+        query.bind(6, user.phone);
 
         query.exec();
         return static_cast<UserId>(db.getLastInsertRowid());
@@ -242,8 +241,20 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
                 sql += ", ";
             sql += "role = ?";
         }
+        if(update.fullname.has_value())
+        {
+            if (!first)
+                sql += ", ";
+            sql += "name = ?";
+        }
+        if(update.phone.has_value())
+        {
+            if (!first)
+                sql += ", ";
+            sql += "phone = ?";
+        }
         sql += " WHERE id = ?";
-
+        
         SQLite::Statement query(db, sql);
 
         int idx = 1;
@@ -251,6 +262,14 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
             query.bind(idx++, *update.email);
         if (update.role.has_value())
             query.bind(idx++, static_cast<int>(*update.role));
+        if(update.fullname.has_value())
+        {
+            query.bind(idx++, *update.fullname);
+        }
+        if(update.phone.has_value())
+        {
+            query.bind(idx++, *update.phone);
+        }
         query.bind(idx, id);
 
         query.exec();

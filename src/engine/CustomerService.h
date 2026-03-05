@@ -47,7 +47,7 @@ public:
     // Customer Profile Management
     UserId createCustomerProfile(const CustomerCreate &profile);
     CustomerDTO getCustomerProfile(UserId customerId);
-    bool updateCustomerProfile(UserId customerId, const CustomerProfileUpdate &updates);
+    bool updateCustomerProfile(UserId userId,CustomerProfileUpdate &update);
     bool deleteCustomerProfile(UserId customerId);
     bool updateCustomerPasswordHash(UserId customerId, const std::string &newHash);
 

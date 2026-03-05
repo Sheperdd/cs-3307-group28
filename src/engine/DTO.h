@@ -45,6 +45,10 @@ struct CustomerCreate
     std::string fullName;
     std::string email;
     std::string phone;
+    std::string passwordHash;
+    std::string createdAt; // ISO string
+    std::string phone;
+    //Confirm password,phone,createdat should be added -Daimen
 };
 
 // GET /users, GET /users/{id}  — server → frontend
@@ -60,6 +64,7 @@ struct CustomerDTO
 // PATCH /users/{id}  — frontend → server (all fields optional)
 struct CustomerProfileUpdate
 {
+    UserId userId{};
     std::optional<std::string> fullName;
     std::optional<std::string> email;
     std::optional<std::string> phone;
