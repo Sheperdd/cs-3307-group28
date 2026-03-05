@@ -67,8 +67,12 @@ inline void from_json(const json &j, AppointmentStatus &s)
   const auto v = j.get<std::string>();
   if (v == "REQUESTED")
     s = AppointmentStatus::REQUESTED;
+  else if (v == "CONFIRMED")
+    s = AppointmentStatus::CONFIRMED;
   else if (v == "SCHEDULED")
     s = AppointmentStatus::SCHEDULED;
+  else if (v == "IN_PROGRESS")
+    s = AppointmentStatus::IN_PROGRESS;
   else if (v == "CANCELLED")
     s = AppointmentStatus::CANCELLED;
   else if (v == "COMPLETED")
@@ -159,6 +163,8 @@ inline void to_json(json &j, const UserRecord &u)
 {
   j = json{
       {"id", u.id},
+      {"name", u.name},
+      {"phone", u.phone},
       {"email", u.email},
       {"passwordHash", u.passwordHash},
       {"role", u.role}, // uses UserRole to_json above
@@ -168,6 +174,8 @@ inline void to_json(json &j, const UserRecord &u)
 inline void from_json(const json &j, UserRecord &u)
 {
   u.id = j.value("id", UserId{0});
+  u.name = j.value("name", std::string{});
+  u.phone = j.value("phone", std::string{});
   j.at("email").get_to(u.email);
   j.at("passwordHash").get_to(u.passwordHash);
   u.role = j.value("role", UserRole::CUSTOMER);

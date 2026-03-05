@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <stdexcept>
+#include <algorithm>
 
 using json = nlohmann::json;
 
@@ -17,18 +18,68 @@ static std::string nowISO()
     return std::string(buffer);
 }
 
-// ---- Mechanics schema helpers ----
+// ---- Schema helpers ----
+static void ensureCustomersSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS customers ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "name TEXT, "
+        "email TEXT NOT NULL UNIQUE, "
+        "phone TEXT, "
+        "password TEXT NOT NULL, "
+        "role INTEGER NOT NULL CHECK(role IN (0, 1)), "
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')))"
+    );
+}
+
+static void ensureVehiclesSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS vehicles ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "ownerUserId INTEGER NOT NULL, "
+        "vin TEXT NOT NULL UNIQUE, "
+        "make TEXT, "
+        "model TEXT NOT NULL, "
+        "year INTEGER, "
+        "mileage INTEGER NOT NULL DEFAULT 0 CHECK(mileage >= 0), "
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
+        "FOREIGN KEY(ownerUserId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(ownerUserId)");
+}
+
+static void ensureSymptomFormsSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS symptom_forms ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "customerId INTEGER NOT NULL, "
+        "vehicleId INTEGER NOT NULL, "
+        "description TEXT NOT NULL, "
+        "severity INTEGER NOT NULL CHECK(severity BETWEEN 1 AND 5), "
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
+        "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE, "
+        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_symptom_forms_customer ON symptom_forms(customerId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_symptom_forms_vehicle ON symptom_forms(vehicleId)");
+}
+
 static void ensureMechanicsSchema(SQLite::Database& db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS mechanics ("
-        "mechanicId INTEGER PRIMARY KEY, "
-        "userId INTEGER UNIQUE, "
+        "id INTEGER PRIMARY KEY, "
+        "userId INTEGER NOT NULL UNIQUE, "
         "displayName TEXT, "
         "shopName TEXT, "
-        "hourlyRate REAL, "
-        "specialties TEXT)"
+        "hourlyRate REAL NOT NULL DEFAULT 0 CHECK(hourlyRate >= 0), "
+        "specialties TEXT, "
+        "FOREIGN KEY(userId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)"
     );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_mechanics_user ON mechanics(userId)");
 }
 
 static void ensureMechanicAvailabilitySchema(SQLite::Database& db)
@@ -36,10 +87,13 @@ static void ensureMechanicAvailabilitySchema(SQLite::Database& db)
     db.exec(
         "CREATE TABLE IF NOT EXISTS mechanic_availability ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "mechanicId INTEGER, "
-        "start TEXT, "
-        "end TEXT)"
+        "mechanicId INTEGER NOT NULL, "
+        "start TEXT NOT NULL, "
+        "end TEXT NOT NULL, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE CASCADE ON UPDATE CASCADE, "
+        "UNIQUE(mechanicId, start, end))"
     );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_mech_avail_mechanic_start_end ON mechanic_availability(mechanicId, start, end)");
 }
 
 static void ensureJobsSchema(SQLite::Database& db)
@@ -47,18 +101,26 @@ static void ensureJobsSchema(SQLite::Database& db)
     db.exec(
         "CREATE TABLE IF NOT EXISTS jobs ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "appointmentId INTEGER, "
-        "mechanicId INTEGER, "
-        "customerId INTEGER, "
-        "vehicleId INTEGER, "
-        "stage INTEGER, "
-        "percentComplete INTEGER, "
+        "appointmentId INTEGER NOT NULL UNIQUE, "
+        "mechanicId INTEGER NOT NULL, "
+        "customerId INTEGER NOT NULL, "
+        "vehicleId INTEGER NOT NULL, "
+        "stage INTEGER NOT NULL DEFAULT 0 CHECK(stage BETWEEN 0 AND 5), "
+        "percentComplete INTEGER NOT NULL DEFAULT 0 CHECK(percentComplete BETWEEN -1 AND 100), "
         "lastNote TEXT, "
-        "updatedAt TEXT, "
+        "updatedAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "startedAt TEXT, "
         "completedAt TEXT, "
-        "completionNote TEXT)"
+        "completionNote TEXT, "
+        "FOREIGN KEY(appointmentId) REFERENCES appointments(id) ON DELETE CASCADE ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
     );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_mechanic ON jobs(mechanicId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_customer ON jobs(customerId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_vehicle ON jobs(vehicleId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_stage ON jobs(stage)");
 }
 
 static void ensureAppointmentsSchema(SQLite::Database& db)
@@ -66,15 +128,24 @@ static void ensureAppointmentsSchema(SQLite::Database& db)
     db.exec(
         "CREATE TABLE IF NOT EXISTS appointments ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "customerId INTEGER, "
-        "mechanicId INTEGER, "
-        "vehicleId INTEGER, "
+        "customerId INTEGER NOT NULL, "
+        "mechanicId INTEGER NOT NULL, "
+        "vehicleId INTEGER NOT NULL, "
         "symptomFormId INTEGER, "
-        "scheduledAt TEXT, "
-        "status INTEGER DEFAULT 0, "
+        "scheduledAt TEXT NOT NULL, "
+        "status INTEGER NOT NULL DEFAULT 0 CHECK(status BETWEEN 0 AND 5), "
         "note TEXT, "
-        "createdAt TEXT)"
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
+        "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(symptomFormId) REFERENCES symptom_forms(id) ON DELETE SET NULL ON UPDATE CASCADE)"
     );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customerId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_mechanic ON appointments(mechanicId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_vehicle ON appointments(vehicleId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_symptom_form ON appointments(symptomFormId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_scheduled_at ON appointments(scheduledAt)");
 }
 
 static void ensureReviewsSchema(SQLite::Database& db)
@@ -82,13 +153,31 @@ static void ensureReviewsSchema(SQLite::Database& db)
     db.exec(
         "CREATE TABLE IF NOT EXISTS reviews ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "jobId INTEGER, "
-        "customerId INTEGER, "
-        "mechanicId INTEGER, "
-        "rating INTEGER, "
+        "jobId INTEGER NOT NULL UNIQUE, "
+        "customerId INTEGER NOT NULL, "
+        "mechanicId INTEGER NOT NULL, "
+        "rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5), "
         "comment TEXT, "
-        "createdAt TEXT)"
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
+        "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE, "
+        "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
     );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_mechanic ON reviews(mechanicId)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customerId)");
+}
+
+static void ensureAllSchemas(SQLite::Database& db)
+{
+    db.exec("PRAGMA foreign_keys = ON");
+    ensureCustomersSchema(db);
+    ensureVehiclesSchema(db);
+    ensureSymptomFormsSchema(db);
+    ensureMechanicsSchema(db);
+    ensureMechanicAvailabilitySchema(db);
+    ensureAppointmentsSchema(db);
+    ensureJobsSchema(db);
+    ensureReviewsSchema(db);
 }
 
 // ==================== Constructor / Destructor ====================
@@ -96,12 +185,7 @@ DatabaseManager::DatabaseManager() : db("torquedesk.db", SQLite::OPEN_READWRITE 
 {
     try
     {
-        db.exec("CREATE TABLE IF NOT EXISTS customers ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "email TEXT, "
-                "password TEXT, "
-                "role INTEGER, "
-                "createdAt TEXT)");
+        ensureAllSchemas(db);
     }
     catch (std::exception &e)
     {
@@ -153,14 +237,14 @@ UserId DatabaseManager::createUser(const UserRecord &user)
     try
     {
         SQLite::Statement query(db,
-                                "INSERT INTO customers (email, password, role, createdAt, name, phone) VALUES (?, ?, ?, ?, ?, ?)");
+                                "INSERT INTO customers (name, phone, email, password, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)");
 
-        query.bind(1, user.email);
-        query.bind(2, user.passwordHash);
-        query.bind(3, static_cast<int>(user.role));
-        query.bind(4, user.createdAt);
-        query.bind(5, user.name);
-        query.bind(6, user.phone);
+        query.bind(1, name);
+        query.bind(2);
+        query.bind(3, email);
+        query.bind(4, passwordHash);
+        query.bind(5, static_cast<int>(role));
+        query.bind(6, nowISO());
 
         query.exec();
         return static_cast<UserId>(db.getLastInsertRowid());
@@ -176,17 +260,19 @@ std::optional<UserRecord> DatabaseManager::getUserRecordById(UserId id)
 {
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE id = ?");
+        SQLite::Statement query(db, "SELECT id, name, phone, email, password, role, createdAt FROM customers WHERE id = ?");
         query.bind(1, id);
 
         if (query.executeStep())
         {
             UserRecord u;
             u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
+            u.name = query.getColumn(1).isNull() ? "" : query.getColumn(1).getText();
+            u.phone = query.getColumn(2).isNull() ? "" : query.getColumn(2).getText();
+            u.email = query.getColumn(3).getText();
+            u.passwordHash = query.getColumn(4).getText();
+            u.role = static_cast<UserRole>(query.getColumn(5).getInt());
+            u.createdAt = query.getColumn(6).getText();
             return u;
         }
         return std::nullopt;
@@ -202,17 +288,19 @@ std::optional<UserRecord> DatabaseManager::getUserRecordByEmail(const std::strin
 {
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE email = ?");
+        SQLite::Statement query(db, "SELECT id, name, phone, email, password, role, createdAt FROM customers WHERE email = ?");
         query.bind(1, email);
 
         if (query.executeStep())
         {
             UserRecord u;
             u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
+            u.name = query.getColumn(1).isNull() ? "" : query.getColumn(1).getText();
+            u.phone = query.getColumn(2).isNull() ? "" : query.getColumn(2).getText();
+            u.email = query.getColumn(3).getText();
+            u.passwordHash = query.getColumn(4).getText();
+            u.role = static_cast<UserRole>(query.getColumn(5).getInt());
+            u.createdAt = query.getColumn(6).getText();
             return u;
         }
         return std::nullopt;
@@ -299,8 +387,8 @@ VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord
     try {
         SQLite::Statement stmt(
             db,
-            "INSERT INTO vehicles (ownerUserId, vin, make, model, year, createdAt) "
-            "VALUES (?, ?, ?, ?, ?, datetime('now'))"
+            "INSERT INTO vehicles (ownerUserId, vin, make, model, year, mileage, createdAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, datetime('now'))"
         );
 
         stmt.bind(1, static_cast<int64_t>(ownerUserId));
@@ -310,6 +398,7 @@ VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord
 
         if (vehicle.year <= 0) stmt.bind(5);
         else stmt.bind(5, vehicle.year);
+        stmt.bind(6, std::max(0, vehicle.mileage));
 
         stmt.exec();
         return static_cast<VehicleId>(db.getLastInsertRowid());
@@ -326,7 +415,7 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
     try {
         SQLite::Statement stmt(
             db,
-            "SELECT id, ownerUserId, vin, make, model, year "
+            "SELECT id, ownerUserId, vin, make, model, year, mileage "
             "FROM vehicles WHERE id = ?"
         );
 
@@ -343,6 +432,7 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
         rec.make = stmt.getColumn(3).getText();
         rec.model = stmt.getColumn(4).getText();
         rec.year = stmt.getColumn(5).isNull() ? 0 : stmt.getColumn(5).getInt();
+        rec.mileage = stmt.getColumn(6).isNull() ? 0 : stmt.getColumn(6).getInt();
 
         return rec;
     }
@@ -360,7 +450,7 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
     try {
         SQLite::Statement stmt(
             db,
-            "SELECT id, ownerUserId, vin, make, model, year "
+            "SELECT id, ownerUserId, vin, make, model, year, mileage "
             "FROM vehicles WHERE ownerUserId = ?"
         );
 
@@ -374,6 +464,7 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
             rec.make = stmt.getColumn(3).getText();
             rec.model = stmt.getColumn(4).getText();
             rec.year = stmt.getColumn(5).isNull() ? 0 : stmt.getColumn(5).getInt();
+            rec.mileage = stmt.getColumn(6).isNull() ? 0 : stmt.getColumn(6).getInt();
 
             results.push_back(std::move(rec));
         }
@@ -390,9 +481,11 @@ bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
     if (vehicleId <= 0) return false;
 
     std::vector<std::string> sets;
+    if (updates.vin.has_value())   sets.emplace_back("vin = ?");
     if (updates.make.has_value())  sets.emplace_back("make = ?");
     if (updates.model.has_value()) sets.emplace_back("model = ?");
     if (updates.year.has_value())  sets.emplace_back("year = ?");
+    if (updates.mileage.has_value()) sets.emplace_back("mileage = ?");
 
     if (sets.empty()) return true; // nothing to update
 
@@ -407,9 +500,11 @@ bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &up
         SQLite::Statement stmt(db, sql);
 
         int idx = 1;
+        if (updates.vin.has_value())   stmt.bind(idx++, updates.vin.value());
         if (updates.make.has_value())  stmt.bind(idx++, updates.make.value());
         if (updates.model.has_value()) stmt.bind(idx++, updates.model.value());
         if (updates.year.has_value())  stmt.bind(idx++, updates.year.value());
+        if (updates.mileage.has_value()) stmt.bind(idx++, updates.mileage.value());
 
         stmt.bind(idx, static_cast<int64_t>(vehicleId));
 
@@ -445,7 +540,21 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
     if (appointmentId <= 0) return -1;
 
     try {
+        ensureAppointmentsSchema(db);
         ensureJobsSchema(db);
+
+        SQLite::Statement apptStmt(
+            db,
+            "SELECT customerId, mechanicId, vehicleId FROM appointments WHERE id = ?"
+        );
+        apptStmt.bind(1, static_cast<int64_t>(appointmentId));
+        if (!apptStmt.executeStep()) {
+            return -1;
+        }
+
+        const auto customerId = static_cast<UserId>(apptStmt.getColumn(0).getInt64());
+        const auto mechanicId = static_cast<MechanicId>(apptStmt.getColumn(1).getInt64());
+        const auto vehicleId = static_cast<VehicleId>(apptStmt.getColumn(2).getInt64());
 
         SQLite::Statement stmt(
             db,
@@ -454,9 +563,9 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
         );
 
         stmt.bind(1, static_cast<int64_t>(appointmentId));
-        stmt.bind(2, static_cast<int64_t>(0));
-        stmt.bind(3, static_cast<int64_t>(0));
-        stmt.bind(4, static_cast<int64_t>(0));
+        stmt.bind(2, static_cast<int64_t>(mechanicId));
+        stmt.bind(3, static_cast<int64_t>(customerId));
+        stmt.bind(4, static_cast<int64_t>(vehicleId));
         stmt.bind(5, static_cast<int>(JobStage::RECEIVED));
         stmt.bind(6, 0);
         stmt.bind(7, "");
@@ -615,7 +724,7 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByUserId(UserId userId
 
         SQLite::Statement stmt(
             db,
-            "SELECT mechanicId, userId, displayName, shopName, hourlyRate, specialties "
+            "SELECT id, userId, displayName, shopName, hourlyRate, specialties "
             "FROM mechanics WHERE userId = ?"
         );
 
@@ -656,7 +765,7 @@ std::vector<MechanicRecord> DatabaseManager::searchMechanics(const MechanicSearc
         ensureMechanicsSchema(db);
 
         std::string sql =
-            "SELECT mechanicId, userId, displayName, shopName, hourlyRate, specialties FROM mechanics";
+            "SELECT id, userId, displayName, shopName, hourlyRate, specialties FROM mechanics";
 
         bool hasWhere = false;
         if (filters.specialty.has_value()) {
@@ -750,7 +859,7 @@ bool DatabaseManager::updateMechanicProfile(MechanicId mechanicId, const Mechani
         // No row updated; insert a new row for this mechanicId/userId
         SQLite::Statement insert(
             db,
-            "INSERT OR REPLACE INTO mechanics (mechanicId, userId, displayName, shopName, hourlyRate, specialties) "
+            "INSERT OR REPLACE INTO mechanics (id, userId, displayName, shopName, hourlyRate, specialties) "
             "VALUES (?, ?, ?, ?, ?, ?)"
         );
 
@@ -1029,13 +1138,18 @@ void DatabaseManager::resetDatabase()
 {
     try
     {
+        db.exec("PRAGMA foreign_keys = OFF");
+        db.exec("DROP TABLE IF EXISTS reviews");
+        db.exec("DROP TABLE IF EXISTS jobs");
+        db.exec("DROP TABLE IF EXISTS appointments");
+        db.exec("DROP TABLE IF EXISTS mechanic_availability");
+        db.exec("DROP TABLE IF EXISTS mechanics");
+        db.exec("DROP TABLE IF EXISTS symptom_forms");
+        db.exec("DROP TABLE IF EXISTS vehicles");
         db.exec("DROP TABLE IF EXISTS customers");
-        db.exec("CREATE TABLE IF NOT EXISTS customers ("
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "email TEXT, "
-                "password TEXT, "
-                "role INTEGER, "
-                "createdAt TEXT)");
+        db.exec("PRAGMA foreign_keys = ON");
+
+        ensureAllSchemas(db);
     }
     catch (std::exception &e)
     {
@@ -1064,15 +1178,17 @@ std::vector<UserRecord> DatabaseManager::listAllUsers()
     std::vector<UserRecord> result;
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers");
+        SQLite::Statement query(db, "SELECT id, name, phone, email, password, role, createdAt FROM customers");
         while (query.executeStep())
         {
             UserRecord u;
             u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
+            u.name = query.getColumn(1).isNull() ? "" : query.getColumn(1).getText();
+            u.phone = query.getColumn(2).isNull() ? "" : query.getColumn(2).getText();
+            u.email = query.getColumn(3).getText();
+            u.passwordHash = query.getColumn(4).getText();
+            u.role = static_cast<UserRole>(query.getColumn(5).getInt());
+            u.createdAt = query.getColumn(6).getText();
             result.push_back(std::move(u));
         }
     }
@@ -1088,16 +1204,18 @@ std::vector<UserRecord> DatabaseManager::listUsersByRole(UserRole role)
     std::vector<UserRecord> result;
     try
     {
-        SQLite::Statement query(db, "SELECT id, email, password, role, createdAt FROM customers WHERE role = ?");
+        SQLite::Statement query(db, "SELECT id, name, phone, email, password, role, createdAt FROM customers WHERE role = ?");
         query.bind(1, static_cast<int>(role));
         while (query.executeStep())
         {
             UserRecord u;
             u.id = query.getColumn(0).getInt64();
-            u.email = query.getColumn(1).getText();
-            u.passwordHash = query.getColumn(2).getText();
-            u.role = static_cast<UserRole>(query.getColumn(3).getInt());
-            u.createdAt = query.getColumn(4).getText();
+            u.name = query.getColumn(1).isNull() ? "" : query.getColumn(1).getText();
+            u.phone = query.getColumn(2).isNull() ? "" : query.getColumn(2).getText();
+            u.email = query.getColumn(3).getText();
+            u.passwordHash = query.getColumn(4).getText();
+            u.role = static_cast<UserRole>(query.getColumn(5).getInt());
+            u.createdAt = query.getColumn(6).getText();
             result.push_back(std::move(u));
         }
     }

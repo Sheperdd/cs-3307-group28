@@ -86,6 +86,7 @@ struct VehicleUpdate {
     std::optional<std::string> model;
     std::optional<int> year;
     std::optional<int> mileage;
+    UserId customerId{};
 };
 
 // Symptom Form

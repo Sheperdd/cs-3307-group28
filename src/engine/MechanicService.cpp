@@ -246,7 +246,7 @@ AppointmentDTO MechanicService::getAppointmentDetails(AppointmentId appointmentI
     if (customer.has_value()){
         details.customerName = customer->name;
         details.customerId = customer->id;
-        details.customerPhone = std::to_string(customer->phone);
+        details.customerPhone = customer->phone;
         details.customerEmail = customer->email;
     }
 
@@ -324,7 +324,7 @@ std::vector<JobDTO> MechanicService::listOpenJobs(MechanicId mechanicId)
             card.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
         }
 
-        card.currentStage = job.currentStage;
+        card.currentStage = job.stage;
         card.percentComplete = job.percentComplete;
         card.startedAt = job.startedAt;
         card.isBlocked = false; // TODO: determine from stage
@@ -347,7 +347,7 @@ JobDTO MechanicService::getJob(JobId jobId)
     details.appointmentId = job->appointmentId;
     details.mechanicId = job->mechanicId;
     details.customerId = job->customerId;
-    details.currentStage = job->currentStage;
+    details.currentStage = job->stage;
     details.percentComplete = job->percentComplete;
     details.startedAt = job->startedAt;
     details.completedAt = job->completedAt;
