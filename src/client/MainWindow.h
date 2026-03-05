@@ -11,6 +11,7 @@ class QStackedWidget;
 class LandingPage;
 class SignUpPage;
 class LoginPage;
+class PasswordResetPage;
 
 class MainWindow : public QMainWindow{
     Q_OBJECT
@@ -19,21 +20,27 @@ public:
     ~MainWindow();
 
 private :
-    QStackedWidget *stack;
-
-    LandingPage *landingPage;
-    SignUpPage *signUpPage;
-    LoginPage *loginPage;
+    QStackedWidget *stack = nullptr;
+    LandingPage *landingPage = nullptr;
+    SignUpPage *signUpPage = nullptr;
+    LoginPage *loginPage = nullptr;
+    PasswordResetPage *passwordResetPage =nullptr;
 
 
     enum PageIndex{
-        LandingIndex =0, SignUpIndex =1, LoginIndex
+        LandingIndex =0,
+        SignUpIndex =1,
+        LoginIndex,
+        PasswordReset
     };
 
 
     void showLandingPage();
     void showSignUpPage();
     void showLoginPage();
+    void showPasswordResetPage();
+
+
 private slots:
     void handleSignUpSubmitted(const QString &fname,
                             const QString &lname,
@@ -42,8 +49,9 @@ private slots:
                             const QString &confirmPassword);
 
     void handleLoginSubmitted(const QString &email, const QString &password);
-};
 
+    void resetPasswordSubmitted(const QString oldPassword, const QString newPassword);
+};
 
 
 #endif //MAINWINDOW_H
