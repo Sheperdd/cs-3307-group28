@@ -1073,11 +1073,79 @@ bool DatabaseManager::cancelAppointment(AppointmentId appointmentId, const std::
 
 // ==================== Symptom Forms (lookup) ====================
 
-std::optional<SymptomFormRecord> DatabaseManager::getSymptomFormById(SymptomFormId formId)
-{
-    // TODO: implement once symptom_forms table schema is finalised
-    if (formId <= 0) return std::nullopt;
-    return std::nullopt;
+
+SymptomFormRecord DatabaseManager::getSymptomFormById(SymptomFormId formId){
+    if(formId <=0) throw std::invalid_argument("getSymptomFormById: invalid formId");
+
+    try{
+        ensureSymptomFormsSchema(db);
+        SQLite::Statement stmt(db,
+            "SELECT * FROM symptom_forms WHERE id = ?");
+            stmt.bind(1, static_cast<int64_t>(formId));
+            if(stmt.executeStep()){
+                SymptomFormRecord r;
+                r.id = stmt.getColumn(0).getInt64();
+                r.customerId = stmt.getColumn(1).getInt64();
+                r.vehicleId = stmt.getColumn(2).getInt64();
+                r.description = stmt.getColumn(3).getText();
+                r.severity = stmt.getColumn(4).getInt();
+                r.createdAt = stmt.getColumn(5).getText();
+                return r;
+            }
+    }
+    catch(const SQLite::Exception &e){
+        throw std::runtime_error(std::string("getSymptomFormById failed: ") + e.what());
+    }
+}
+SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form){
+    ensureSymptomFormsSchema(db);
+    SQLite::Statement stmt(
+        db,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity, createdAt) VALUES (?, ?, ?, ?, ?)"
+    );
+    stmt.bind(1, form.customerId);
+    stmt.bind(2, form.vehicleId);
+    stmt.bind(3, form.description);
+    stmt.bind(4, form.severity);
+    stmt.bind(5, nowISO());
+    stmt.exec();
+    return db.getLastInsertRowid();
+}
+std::vector<SymptomFormRecord> DatabaseManager::listSymptomFormsForCustomer(UserId customerId){
+    std::vector<SymptomFormRecord> result;
+    SQLite::Statement stmt(db,
+        "SELECT * FROM symptom_forms WHERE customerId = ?");
+        stmt.bind(1, static_cast<int64_t>(customerId));
+        while(stmt.executeStep()){
+            SymptomFormRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.customerId = stmt.getColumn(1).getInt64();
+            r.vehicleId = stmt.getColumn(2).getInt64();
+            r.description = stmt.getColumn(3).getText();
+            r.severity = stmt.getColumn(4).getInt();
+            r.createdAt = stmt.getColumn(5).getText();
+            result.push_back(std::move(r));
+        }
+    return result;
+}
+bool DatabaseManager::updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates){
+    std::string sql = "UPDATE symptom_forms SET";
+    if(updates.description.has_value()) sql += " description = ?";
+    if(updates.severity.has_value()) sql += " severity = ?";
+    sql += " WHERE id = ?";
+    SQLite::Statement stmt(db, sql);
+    int idx = 1;
+    if(updates.description.has_value()) stmt.bind(idx++, updates.description.value());
+    if(updates.severity.has_value()) stmt.bind(idx++, updates.severity.value());
+    stmt.bind(idx, static_cast<int64_t>(formId));
+    return stmt.exec() > 0;
+
+}
+bool DatabaseManager::deleteSymptomForm(SymptomFormId formId){
+    SQLite::Statement stmt(db,
+        "DELETE FROM symptom_forms WHERE id = ?");
+        stmt.bind(1, static_cast<int64_t>(formId));
+        return stmt.exec() > 0;
 }
 
 // ==================== Reviews ====================
