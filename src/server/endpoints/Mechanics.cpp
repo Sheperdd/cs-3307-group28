@@ -83,35 +83,149 @@ MechanicsHandler::handle(const http::request<http::string_body> &req,
   }
 }
 
-// GET /mechanics
+// GET /mechanics?specialty=<s>&maxDistanceKm=<d>
 net::awaitable<http::response<http::string_body>>
 MechanicsHandler::search(unsigned ver, bool ka, const http::request<http::string_body> &req,
                          ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.searchMechanics()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  // Parse optional query parameters into a MechanicSearchFilter.
+  auto params = http_utils::parse_query_params(req.target());
+
+  MechanicSearchFilter filter;
+  if (auto it = params.find("specialty"); it != params.end())
+    filter.specialty = it->second;
+  bool parseOk = true;
+  if (auto it = params.find("maxDistanceKm"); it != params.end())
+  {
+    try
+    {
+      filter.maxDistanceKm = std::stod(it->second);
+    }
+    catch (...)
+    {
+      parseOk = false;
+    }
+
+    if (!parseOk)
+      co_return http_utils::make_error(http::status::bad_request,
+                                       "Invalid maxDistanceKm value", ver, ka);
+  }
+
+  struct Result
+  {
+    std::vector<MechanicRecord> mechanics;
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, filter]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.mechanics = ctx.db.searchMechanics(filter);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(res.mechanics), ver, ka);
 }
 
 // GET /mechanics/{id}
 net::awaitable<http::response<http::string_body>>
-MechanicsHandler::getProfile(MechanicId id, unsigned ver, bool ka,
+MechanicsHandler::getProfile(MechanicId mechanicId, unsigned ver, bool ka,
                              ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.getMechanicByUserId()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  struct Result
+  {
+    std::optional<MechanicDTO> mechanic;
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, mechanicId]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.mechanic = ctx.mechanicService.getMechanicProfile(mechanicId);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  if (!res.mechanic.has_value())
+    co_return http_utils::make_error(http::status::not_found,
+                                     "Mechanic not found", ver, ka);
+
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(res.mechanic.value()), ver, ka);
 }
 
-// PUT /mechanics/{id}
+// PATCH /mechanics/{id}
 net::awaitable<http::response<http::string_body>>
 MechanicsHandler::updateProfile(MechanicId id, const http::request<http::string_body> &req,
                                 unsigned ver, bool ka,
                                 ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.updateMechanicProfile()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  json body;
+  bool parseOk = true;
+  try
+  {
+    body = json::parse(req.body());
+  }
+  catch (...)
+  {
+    parseOk = false;
+  }
+  if (!parseOk)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     "Invalid JSON body", ver, ka);
+
+  MechanicUpdateDTO updateMechanic = body.get<MechanicUpdateDTO>();
+
+  struct Result
+  {
+    bool ok{false};
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, id, updateMechanic]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.ok = ctx.mechanicService.updateMechanicProfile(id, updateMechanic);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
 }
 
 // GET /mechanics/{id}/schedule

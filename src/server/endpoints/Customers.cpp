@@ -187,7 +187,6 @@ CustomersHandler::updateUser(UserId userId,
                              unsigned ver, bool ka,
                              ServiceContext &ctx, net::thread_pool &pool)
 {
-    // TODO: Switch to ctx.customerService.updateCustomerProfile() when available
     json body;
     bool parseOk = true;
     try

@@ -19,7 +19,7 @@ private:
   // GET /mechanics/{id}
   net::awaitable<http::response<http::string_body>>
   getProfile(MechanicId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
-  // PUT /mechanics/{id}
+  // PATCH /mechanics/{id}
   net::awaitable<http::response<http::string_body>>
   updateProfile(MechanicId id, const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
   // GET /mechanics/{id}/schedule

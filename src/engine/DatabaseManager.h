@@ -100,8 +100,12 @@ public:
     JobId createJobFromAppointment(AppointmentId appointmentId);
     std::optional<JobRecord> getJobById(JobId jobId);
     std::vector<JobRecord> listOpenJobsForMechanic(MechanicId mechanicId);
-    bool updateJobStage(JobId jobId, JobStage stage, int percentComplete, const std::string &note);
-    bool markJobComplete(JobId jobId, const std::string &completionNote);
+    bool updateJobStage(JobId jobId, JobStage stage, int percentComplete);
+    bool markJobComplete(JobId jobId);
+
+    // Job Notes
+    JobNoteId addJobNote(JobId jobId, const std::string &type, const std::string &text);
+    std::vector<JobNoteRecord> listJobNotes(JobId jobId);
 
     // Reviews
     ReviewId createReview(const ReviewRecord &review);

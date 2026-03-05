@@ -303,6 +303,30 @@ inline void from_json(const json &j, MechanicMatch &m)
         j.at("reasons").get_to(m.reasons);
 }
 
+// ----------- MechanicProfileUpdate (frontend → server) -----------
+inline void from_json(const json &j, MechanicUpdateDTO &u)
+{
+    u.mechanicId = j.value("mechanicId", MechanicId{0});
+    if (j.contains("displayName"))
+        u.displayName = j.at("displayName").get<std::string>();
+    if (j.contains("shopName"))
+        u.shopName = j.at("shopName").get<std::string>();
+    if (j.contains("hourlyRate"))
+        u.hourlyRate = j.at("hourlyRate").get<double>();
+    if (j.contains("specialties"))
+        u.specialties = j.at("specialties").get<std::vector<std::string>>();
+}
+
+inline void to_json(json &j, const MechanicUpdateDTO &u)
+{
+    j = json{
+        {"mechanicId", u.mechanicId},
+        {"displayName", u.displayName.value_or(std::string{})},
+        {"shopName", u.shopName.value_or(std::string{})},
+        {"hourlyRate", u.hourlyRate.value_or(0.0)},
+        {"specialties", u.specialties.value_or(std::vector<std::string>{})}};
+}
+
 // ----------- PriceEstimate (server → frontend) -----------
 inline void to_json(json &j, const PriceEstimate &p)
 {
@@ -323,6 +347,24 @@ inline void from_json(const json &j, PriceEstimate &p)
     p.note = j.value("note", std::string{});
 }
 
+// ----------- JobNoteDTO (server → frontend) -----------
+inline void to_json(json &j, const JobNoteDTO &n)
+{
+    j = json{
+        {"noteId", n.noteId},
+        {"type", n.type},
+        {"text", n.text},
+        {"createdAt", n.createdAt}};
+}
+
+inline void from_json(const json &j, JobNoteDTO &n)
+{
+    n.noteId = j.value("noteId", JobNoteId{0});
+    n.type = j.value("type", std::string{"update"});
+    n.text = j.value("text", std::string{});
+    n.createdAt = j.value("createdAt", std::string{});
+}
+
 // ----------- JobDTO (server → frontend) -----------
 inline void to_json(json &j, const JobDTO &jd)
 {
@@ -333,11 +375,10 @@ inline void to_json(json &j, const JobDTO &jd)
         {"mechanicId", jd.mechanicId},
         {"currentStage", jd.currentStage},
         {"percentComplete", jd.percentComplete},
-        {"lastNote", jd.lastNote},
+        {"notes", jd.notes},
         {"updatedAt", jd.updatedAt},
         {"startedAt", jd.startedAt},
         {"completedAt", jd.completedAt},
-        {"completionNote", jd.completionNote},
         {"customerName", jd.customerName},
         {"customerEmail", jd.customerEmail},
         {"vehicleDescription", jd.vehicleDescription},
@@ -352,11 +393,12 @@ inline void from_json(const json &j, JobDTO &jd)
     jd.mechanicId = j.value("mechanicId", MechanicId{0});
     jd.currentStage = j.value("currentStage", JobStage::RECEIVED);
     jd.percentComplete = j.value("percentComplete", 0);
-    jd.lastNote = j.value("lastNote", std::string{});
+    if (j.contains("notes")) {
+        jd.notes = j.at("notes").get<std::vector<JobNoteDTO>>();
+    }
     jd.updatedAt = j.value("updatedAt", std::string{});
     jd.startedAt = j.value("startedAt", std::string{});
     jd.completedAt = j.value("completedAt", std::string{});
-    jd.completionNote = j.value("completionNote", std::string{});
     jd.customerName = j.value("customerName", std::string{});
     jd.customerEmail = j.value("customerEmail", std::string{});
     jd.vehicleDescription = j.value("vehicleDescription", std::string{});

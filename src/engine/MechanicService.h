@@ -25,7 +25,7 @@ public:
     MechanicId createMechanicProfile(UserId userId, const MechanicCreate& profile);
     MechanicDTO getMechanicProfile(MechanicId mechanicId);
 
-    bool updateMechanicProfile(MechanicId mechanicId, MechanicUpdate updates);
+    bool updateMechanicProfile(MechanicId mechanicId, MechanicUpdateDTO updates);
     std::vector<AppointmentDTO> listIncomingRequests(MechanicId mechanicId);
     bool AcceptAppointment(AppointmentId appointmentId);
     bool declineAppointment(AppointmentId appointmentId, std::string note);
@@ -40,6 +40,8 @@ public:
     bool updateJobStage(MechanicId mechanicId, JobId jobId, JobStage stage, int percentCompleted, std::string note);
     bool markJobBlocked(MechanicId mechanicId, JobId jobId, const std::string& reasoning);
     bool markJobComplete(MechanicId mechanicId, JobId jobId, const std::string& completionSum);
+    JobNoteId addJobNote(MechanicId mechanicId, JobId jobId, const std::string& text);
+    std::vector<JobNoteDTO> listJobNotes(JobId jobId);
 
     std::vector<ReviewDTO> listMyReviews(MechanicId mechanicId);
 

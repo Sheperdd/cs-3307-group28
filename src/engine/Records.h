@@ -12,6 +12,7 @@ using SymptomFormId = int64_t;
 using MechanicId = int64_t;
 using AppointmentId = int64_t;
 using JobId = int64_t;
+using JobNoteId = int64_t;
 using ReviewId = int64_t;
 
 // ----------- Enums -----------
@@ -144,12 +145,18 @@ struct JobRecord {
     VehicleId vehicleId;
     JobStage stage{ JobStage::RECEIVED };
     int percentComplete{ 0 }; // 0–100
-    std::string lastNote;
     std::string updatedAt; // ISO datetime
-    JobStage currentStage;
     std::string startedAt;
     std::string completedAt;
-    std::string completionNote;
+};
+
+// Job Note (one entry in the per-job log)
+struct JobNoteRecord {
+    JobNoteId id{};
+    JobId jobId{};
+    std::string type;      // "update", "blocked", "completion"
+    std::string text;
+    std::string createdAt; // ISO datetime
 };
 
 // Review

@@ -305,7 +305,183 @@ TEST_F(DatabaseTests, CustomerServiceGetJobStatus) {
     EXPECT_EQ(status.jobId, jobId);
     EXPECT_EQ(status.appointmentId, appointmentId);
 
+    // createJobFromAppointment seeds one "Job created" note
+    ASSERT_GE(status.notes.size(), 1u);
+    EXPECT_EQ(status.notes[0].type, "update");
+    EXPECT_EQ(status.notes[0].text, "Job created");
+
     EXPECT_THROW(service.getJobStatus(0), std::invalid_argument);
+}
+
+// ----------- Job Notes Tests -----------
+
+TEST_F(DatabaseTests, JobNotesAddAndList) {
+    DatabaseManager db;
+
+    auto customerId = db.createUser("CustNote", "custnote@torquedesk.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("MechNote", "mechnote@torquedesk.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mechanicUpdate;
+    mechanicUpdate.displayName = std::string("NoteBot");
+    mechanicUpdate.shopName = std::string("NoteBot Auto");
+    mechanicUpdate.hourlyRate = 80.0;
+    EXPECT_TRUE(db.updateMechanicProfile(mechanicUserId, mechanicUpdate));
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VINNOTE1";
+    vehicle.make = "Honda";
+    vehicle.model = "Civic";
+    vehicle.year = 2022;
+    vehicle.mileage = 5000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(
+        rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)"
+    );
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Brake squealing");
+    symptomInsert.bind(4, 4);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+    ASSERT_GT(symptomFormId, 0);
+
+    AppointmentRecord req{};
+    req.customerId = customerId;
+    req.mechanicId = mechanicUserId;
+    req.vehicleId = vehicleId;
+    req.symptomFormId = symptomFormId;
+    req.scheduledAt = "2026-04-01T10:00:00Z";
+    req.status = AppointmentStatus::REQUESTED;
+    req.note = "Brakes are squealing";
+
+    auto appointmentId = db.createAppointment(req);
+    ASSERT_GT(appointmentId, 0);
+
+    auto jobId = db.createJobFromAppointment(appointmentId);
+    ASSERT_GT(jobId, 0);
+
+    // createJobFromAppointment seeds one note
+    auto notes = db.listJobNotes(jobId);
+    ASSERT_EQ(notes.size(), 1u);
+    EXPECT_EQ(notes[0].type, "update");
+    EXPECT_EQ(notes[0].text, "Job created");
+    EXPECT_GT(notes[0].id, 0);
+
+    // Add more notes
+    auto n1 = db.addJobNote(jobId, "update", "Started diagnostics");
+    EXPECT_GT(n1, 0);
+    auto n2 = db.addJobNote(jobId, "update", "Found worn brake pads");
+    EXPECT_GT(n2, 0);
+    auto n3 = db.addJobNote(jobId, "blocked", "Waiting for parts");
+    EXPECT_GT(n3, 0);
+    auto n4 = db.addJobNote(jobId, "completion", "All done, new pads installed");
+    EXPECT_GT(n4, 0);
+
+    notes = db.listJobNotes(jobId);
+    ASSERT_EQ(notes.size(), 5u);
+
+    // Verify chronological order and types
+    EXPECT_EQ(notes[0].text, "Job created");
+    EXPECT_EQ(notes[1].text, "Started diagnostics");
+    EXPECT_EQ(notes[1].type, "update");
+    EXPECT_EQ(notes[2].text, "Found worn brake pads");
+    EXPECT_EQ(notes[3].text, "Waiting for parts");
+    EXPECT_EQ(notes[3].type, "blocked");
+    EXPECT_EQ(notes[4].text, "All done, new pads installed");
+    EXPECT_EQ(notes[4].type, "completion");
+
+    // All notes belong to this job
+    for (const auto& note : notes) {
+        EXPECT_EQ(note.jobId, jobId);
+        EXPECT_FALSE(note.createdAt.empty());
+    }
+
+    // Invalid jobId returns empty
+    auto empty = db.listJobNotes(0);
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(db.addJobNote(0, "update", "should fail"), -1);
+}
+
+TEST_F(DatabaseTests, JobNotesViaGetJobStatus) {
+    DatabaseManager db;
+
+    auto customerId = db.createUser("CustFlow", "custflow@torquedesk.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("MechFlow", "mechflow@torquedesk.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mechanicUpdate;
+    mechanicUpdate.displayName = std::string("FlowBot");
+    mechanicUpdate.shopName = std::string("FlowBot Garage");
+    mechanicUpdate.hourlyRate = 90.0;
+    EXPECT_TRUE(db.updateMechanicProfile(mechanicUserId, mechanicUpdate));
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VINFLOW1";
+    vehicle.make = "Toyota";
+    vehicle.model = "Corolla";
+    vehicle.year = 2023;
+    vehicle.mileage = 3000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(
+        rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)"
+    );
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Engine light on");
+    symptomInsert.bind(4, 3);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+
+    AppointmentRecord req{};
+    req.customerId = customerId;
+    req.mechanicId = mechanicUserId;
+    req.vehicleId = vehicleId;
+    req.symptomFormId = symptomFormId;
+    req.scheduledAt = "2026-05-01T10:00:00Z";
+    req.status = AppointmentStatus::REQUESTED;
+    req.note = "Check engine light";
+
+    auto appointmentId = db.createAppointment(req);
+    auto jobId = db.createJobFromAppointment(appointmentId);
+    ASSERT_GT(jobId, 0);
+
+    // Simulate mechanic workflow: update stage + notes
+    db.updateJobStage(jobId, JobStage::DIAGNOSTICS, 20);
+    db.addJobNote(jobId, "update", "Running diagnostic scan");
+    db.updateJobStage(jobId, JobStage::REPAIR, 60);
+    db.addJobNote(jobId, "update", "Replacing O2 sensor");
+    db.markJobComplete(jobId);
+    db.addJobNote(jobId, "completion", "O2 sensor replaced, engine light cleared");
+
+    // Now check from customer perspective
+    RatingEngine rating(db, 30);
+    ProfitabilityEngine profitability(db, 100, 0.13);
+    TestCustomerValidator validator;
+    CustomerService service(&db, rating, profitability, validator);
+
+    auto status = service.getJobStatus(jobId);
+    EXPECT_EQ(status.currentStage, JobStage::DONE);
+    EXPECT_EQ(status.percentComplete, 100);
+
+    // Should have: "Job created" + 2 update notes + 1 completion = 4 total
+    ASSERT_EQ(status.notes.size(), 4u);
+    EXPECT_EQ(status.notes[0].type, "update");
+    EXPECT_EQ(status.notes[0].text, "Job created");
+    EXPECT_EQ(status.notes[1].type, "update");
+    EXPECT_EQ(status.notes[1].text, "Running diagnostic scan");
+    EXPECT_EQ(status.notes[2].type, "update");
+    EXPECT_EQ(status.notes[2].text, "Replacing O2 sensor");
+    EXPECT_EQ(status.notes[3].type, "completion");
+    EXPECT_EQ(status.notes[3].text, "O2 sensor replaced, engine light cleared");
 }
 
 TEST_F(DatabaseTests, CustomerServiceUnsubscribeFromJobUpdates) {

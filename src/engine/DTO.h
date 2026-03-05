@@ -136,7 +136,16 @@ struct MechanicDTO
     double averageRating{0.0}; // computed from reviews
     int reviewCount{0};        // computed from reviews
 };
-// Note: for PATCH use MechanicUpdate from Records.h (same fields, all optional).
+
+// PATCH /mechanics/{id}  — frontend → server (all fields optional)
+struct MechanicUpdateDTO
+{
+    MechanicId mechanicId{};
+    std::optional<std::string> displayName;
+    std::optional<std::string> shopName;
+    std::optional<double> hourlyRate;
+    std::optional<std::vector<std::string>> specialties;
+};
 
 // Discovery helper — ranked match result from the matching engine.
 struct MechanicMatch
@@ -194,6 +203,15 @@ struct AppointmentDTO
 };
 
 // ========================= 6. Jobs =========================
+// Single note entry in the per-job activity log.
+struct JobNoteDTO
+{
+    JobNoteId noteId{};
+    std::string type;      // "update", "blocked", "completion"
+    std::string text;
+    std::string createdAt; // ISO datetime
+};
+
 // GET /jobs/{id}, GET /mechanics/{mechanicId}/jobs  — server → frontend
 // One struct covers job status, card view, and detail view.
 struct JobDTO
@@ -204,11 +222,10 @@ struct JobDTO
     MechanicId mechanicId{};
     JobStage currentStage{JobStage::RECEIVED};
     int percentComplete{0};
-    std::string lastNote;
+    std::vector<JobNoteDTO> notes; // chronological activity log
     std::string updatedAt;   // ISO datetime
     std::string startedAt;   // ISO datetime
     std::string completedAt; // ISO datetime
-    std::string completionNote;
     std::string customerName;
     std::string customerEmail;
     std::string vehicleDescription;

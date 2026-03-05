@@ -16,7 +16,7 @@ private:
   // GET /jobs/{id}
   net::awaitable<http::response<http::string_body>>
   getJob(JobId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
-  // PUT /jobs/{id}/stage
+  // PATCH /jobs/{id}/stage
   net::awaitable<http::response<http::string_body>>
   updateStage(JobId id, const http::request<http::string_body> &req,
               unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
@@ -24,4 +24,11 @@ private:
   net::awaitable<http::response<http::string_body>>
   completeJob(JobId id, const http::request<http::string_body> &req,
               unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // GET /jobs/{id}/notes
+  net::awaitable<http::response<http::string_body>>
+  getJobNotes(JobId id, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
+  // POST /jobs/{id}/notes
+  net::awaitable<http::response<http::string_body>>
+  addJobNote(JobId id, const http::request<http::string_body> &req,
+             unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
 };

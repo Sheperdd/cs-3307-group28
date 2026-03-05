@@ -73,13 +73,20 @@ MechanicDTO MechanicService::getMechanicProfile(MechanicId mechanicId){
     return profile;
 }
 
-bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicUpdate updates){
+bool MechanicService::updateMechanicProfile(MechanicId mechanicId, MechanicUpdateDTO updates){
     auto mechanic = db.getMechanicByUserId(mechanicId);
     if (!mechanic.has_value()){
         throw std::runtime_error("Mechanic profile was not found");
     }
 
-    return db.updateMechanicProfile(mechanicId, updates);
+    MechanicUpdate update;
+    update.specialties = updates.specialties;
+    update.displayName = updates.displayName;
+    update.shopName = updates.shopName;
+    update.hourlyRate = updates.hourlyRate;
+
+
+    return db.updateMechanicProfile(mechanicId, update);
 }
 
 std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mechanicId)
@@ -284,7 +291,8 @@ JobId MechanicService::startJobFromAppointment(MechanicId mechanicId, Appointmen
 
         auto stages = buildDefaultStages();;
         if (!stages.empty()){
-            db.updateJobStage(jobid, stages[0], 0, "Job Started");
+            db.updateJobStage(jobid, stages[0], 0);
+            db.addJobNote(jobid, "update", "Job started");
         }
 
         db.commit();
@@ -347,7 +355,17 @@ JobDTO MechanicService::getJob(JobId jobId)
     details.percentComplete = job->percentComplete;
     details.startedAt = job->startedAt;
     details.completedAt = job->completedAt;
-    details.completionNote = job->completionNote;
+
+    // Load the notes log
+    auto noteRecords = db.listJobNotes(job->id);
+    for (const auto& nr : noteRecords) {
+        JobNoteDTO noteDto;
+        noteDto.noteId = nr.id;
+        noteDto.type = nr.type;
+        noteDto.text = nr.text;
+        noteDto.createdAt = nr.createdAt;
+        details.notes.push_back(noteDto);
+    }
 
     // Get customer details
     auto customer = db.getUserRecordById(job->customerId);
@@ -368,10 +386,12 @@ JobDTO MechanicService::getJob(JobId jobId)
 bool MechanicService::updateJobStage(MechanicId mechanicId, JobId jobId, JobStage stage, int percentCompleted, std::string note){
     validateMechanicOwnsJob(mechanicId, jobId);
 
-    bool success = db.updateJobStage(jobId, stage, percentCompleted, note);
+    bool success = db.updateJobStage(jobId, stage, percentCompleted);
     if (success) {
+        if (!note.empty()) {
+            db.addJobNote(jobId, "update", note);
+        }
         publishJobUpdate(jobId);
-        //TODO: this
     }
 
     return success;
@@ -381,16 +401,22 @@ bool MechanicService::markJobBlocked(MechanicId mechanicId, JobId jobId, const s
 {
     validateMechanicOwnsJob(mechanicId, jobId);
 
-    // Mark the job as blocked by setting percentComplete to -1 with a note
-    return db.updateJobStage(jobId, JobStage::REPAIR, -1, "BLOCKED: " + reason);
+    // Mark the job as blocked by setting percentComplete to -1
+    bool success = db.updateJobStage(jobId, JobStage::REPAIR, -1);
+    if (success) {
+        db.addJobNote(jobId, "blocked", reason);
+    }
+    return success;
 }
 
 bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const std::string& completionSummary)
 {
     validateMechanicOwnsJob(mechanicId, jobId);
 
-    bool success = db.markJobComplete(jobId, completionSummary);
+    bool success = db.markJobComplete(jobId);
     if (success) {
+        db.addJobNote(jobId, "completion", completionSummary);
+
         // Update associated appointment to completed
         auto job = db.getJobById(jobId);
         if (job.has_value()) {
@@ -401,6 +427,27 @@ bool MechanicService::markJobComplete(MechanicId mechanicId, JobId jobId, const 
     }
 
     return success;
+}
+
+JobNoteId MechanicService::addJobNote(MechanicId mechanicId, JobId jobId, const std::string& text)
+{
+    validateMechanicOwnsJob(mechanicId, jobId);
+    return db.addJobNote(jobId, "update", text);
+}
+
+std::vector<JobNoteDTO> MechanicService::listJobNotes(JobId jobId)
+{
+    auto noteRecords = db.listJobNotes(jobId);
+    std::vector<JobNoteDTO> notes;
+    for (const auto& nr : noteRecords) {
+        JobNoteDTO noteDto;
+        noteDto.noteId = nr.id;
+        noteDto.type = nr.type;
+        noteDto.text = nr.text;
+        noteDto.createdAt = nr.createdAt;
+        notes.push_back(noteDto);
+    }
+    return notes;
 }
 
 // ---------------- Reviews ----------------

@@ -284,8 +284,9 @@ inline void to_json(json &j, const JobRecord &jr)
       {"customerId", jr.customerId},
       {"stage", jr.stage}, // uses JobStage to_json
       {"percentComplete", jr.percentComplete},
-      {"lastNote", jr.lastNote},
-      {"updatedAt", jr.updatedAt}};
+      {"updatedAt", jr.updatedAt},
+      {"startedAt", jr.startedAt},
+      {"completedAt", jr.completedAt}};
 }
 
 inline void from_json(const json &j, JobRecord &jr)
@@ -296,8 +297,29 @@ inline void from_json(const json &j, JobRecord &jr)
   jr.customerId = j.value("customerId", UserId{0});
   jr.stage = j.value("stage", JobStage::RECEIVED);
   jr.percentComplete = j.value("percentComplete", 0);
-  jr.lastNote = j.value("lastNote", std::string{});
   jr.updatedAt = j.value("updatedAt", std::string{});
+  jr.startedAt = j.value("startedAt", std::string{});
+  jr.completedAt = j.value("completedAt", std::string{});
+}
+
+// ----------- JobNoteRecord -----------
+inline void to_json(json &j, const JobNoteRecord &n)
+{
+  j = json{
+      {"id", n.id},
+      {"jobId", n.jobId},
+      {"type", n.type},
+      {"text", n.text},
+      {"createdAt", n.createdAt}};
+}
+
+inline void from_json(const json &j, JobNoteRecord &n)
+{
+  n.id = j.value("id", JobNoteId{0});
+  n.jobId = j.value("jobId", JobId{0});
+  n.type = j.value("type", std::string{"update"});
+  n.text = j.value("text", std::string{});
+  n.createdAt = j.value("createdAt", std::string{});
 }
 
 // ----------- ReviewRecord -----------

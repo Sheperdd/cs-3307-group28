@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 #include <charconv>
+#include <unordered_map>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -64,6 +65,29 @@ namespace http_utils
     res.body() = body.dump();
     res.prepare_payload();
     return res;
+  }
+
+  /// Parse a query string (e.g. "specialty=brakes&maxDistanceKm=10") into a
+  /// key→value map. Handles both the raw query portion and a full target URL.
+  inline std::unordered_map<std::string, std::string>
+  parse_query_params(std::string_view target)
+  {
+    std::unordered_map<std::string, std::string> params;
+    auto qpos = target.find('?');
+    if (qpos == std::string_view::npos)
+      return params;
+    std::string_view qs = target.substr(qpos + 1);
+    while (!qs.empty())
+    {
+      auto amp = qs.find('&');
+      std::string_view pair = (amp == std::string_view::npos) ? qs : qs.substr(0, amp);
+      auto eq = pair.find('=');
+      if (eq != std::string_view::npos)
+        params.emplace(std::string(pair.substr(0, eq)),
+                       std::string(pair.substr(eq + 1)));
+      qs = (amp == std::string_view::npos) ? std::string_view{} : qs.substr(amp + 1);
+    }
+    return params;
   }
 
   /// Convenience overload for error responses.

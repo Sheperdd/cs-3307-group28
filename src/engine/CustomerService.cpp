@@ -254,11 +254,20 @@ JobDTO CustomerService::getJobStatus(JobId jobId)
 	dto.mechanicId = job->mechanicId;
 	dto.currentStage = job->stage;
 	dto.percentComplete = job->percentComplete;
-	dto.lastNote = job->lastNote;
 	dto.updatedAt = job->updatedAt;
 	dto.startedAt = job->startedAt;
 	dto.completedAt = job->completedAt;
-	dto.completionNote = job->completionNote;
+
+	// Load the notes log
+	auto noteRecords = db->listJobNotes(job->id);
+	for (const auto& nr : noteRecords) {
+		JobNoteDTO noteDto;
+		noteDto.noteId = nr.id;
+		noteDto.type = nr.type;
+		noteDto.text = nr.text;
+		noteDto.createdAt = nr.createdAt;
+		dto.notes.push_back(noteDto);
+	}
 
 	return dto;
 }

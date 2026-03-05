@@ -107,11 +107,9 @@ static void ensureJobsSchema(SQLite::Database& db)
         "vehicleId INTEGER NOT NULL, "
         "stage INTEGER NOT NULL DEFAULT 0 CHECK(stage BETWEEN 0 AND 5), "
         "percentComplete INTEGER NOT NULL DEFAULT 0 CHECK(percentComplete BETWEEN -1 AND 100), "
-        "lastNote TEXT, "
         "updatedAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "startedAt TEXT, "
         "completedAt TEXT, "
-        "completionNote TEXT, "
         "FOREIGN KEY(appointmentId) REFERENCES appointments(id) ON DELETE CASCADE ON UPDATE CASCADE, "
         "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
@@ -121,6 +119,20 @@ static void ensureJobsSchema(SQLite::Database& db)
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_customer ON jobs(customerId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_vehicle ON jobs(vehicleId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_stage ON jobs(stage)");
+}
+
+static void ensureJobNotesSchema(SQLite::Database& db)
+{
+    db.exec(
+        "CREATE TABLE IF NOT EXISTS job_notes ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "jobId INTEGER NOT NULL, "
+        "type TEXT NOT NULL DEFAULT 'update', "
+        "text TEXT NOT NULL, "
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
+        "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE)"
+    );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_job_notes_job ON job_notes(jobId)");
 }
 
 static void ensureAppointmentsSchema(SQLite::Database& db)
@@ -177,6 +189,7 @@ static void ensureAllSchemas(SQLite::Database& db)
     ensureMechanicAvailabilitySchema(db);
     ensureAppointmentsSchema(db);
     ensureJobsSchema(db);
+    ensureJobNotesSchema(db);
     ensureReviewsSchema(db);
 }
 
@@ -572,8 +585,8 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
 
         SQLite::Statement stmt(
             db,
-            "INSERT INTO jobs (appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, lastNote, updatedAt, startedAt) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO jobs (appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         stmt.bind(1, static_cast<int64_t>(appointmentId));
@@ -582,12 +595,16 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
         stmt.bind(4, static_cast<int64_t>(vehicleId));
         stmt.bind(5, static_cast<int>(JobStage::RECEIVED));
         stmt.bind(6, 0);
-        stmt.bind(7, "");
+        stmt.bind(7, nowISO());
         stmt.bind(8, nowISO());
-        stmt.bind(9, nowISO());
 
         stmt.exec();
-        return static_cast<JobId>(db.getLastInsertRowid());
+        auto jobId = static_cast<JobId>(db.getLastInsertRowid());
+
+        // Seed the notes log
+        addJobNote(jobId, "update", "Job created");
+
+        return jobId;
     }
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("createJobFromAppointment failed: ") + e.what());
@@ -603,7 +620,7 @@ std::optional<JobRecord> DatabaseManager::getJobById(JobId jobId)
 
         SQLite::Statement stmt(
             db,
-            "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, lastNote, updatedAt, startedAt, completedAt, completionNote "
+            "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt, completedAt "
             "FROM jobs WHERE id = ?"
         );
 
@@ -621,11 +638,9 @@ std::optional<JobRecord> DatabaseManager::getJobById(JobId jobId)
         rec.vehicleId = static_cast<VehicleId>(stmt.getColumn(4).getInt64());
         rec.stage = static_cast<JobStage>(stmt.getColumn(5).getInt());
         rec.percentComplete = stmt.getColumn(6).getInt();
-        rec.lastNote = stmt.getColumn(7).isNull() ? "" : stmt.getColumn(7).getText();
-        rec.updatedAt = stmt.getColumn(8).isNull() ? "" : stmt.getColumn(8).getText();
-        rec.startedAt = stmt.getColumn(9).isNull() ? "" : stmt.getColumn(9).getText();
-        rec.completedAt = stmt.getColumn(10).isNull() ? "" : stmt.getColumn(10).getText();
-        rec.completionNote = stmt.getColumn(11).isNull() ? "" : stmt.getColumn(11).getText();
+        rec.updatedAt = stmt.getColumn(7).isNull() ? "" : stmt.getColumn(7).getText();
+        rec.startedAt = stmt.getColumn(8).isNull() ? "" : stmt.getColumn(8).getText();
+        rec.completedAt = stmt.getColumn(9).isNull() ? "" : stmt.getColumn(9).getText();
 
         return rec;
     }
@@ -644,7 +659,7 @@ std::vector<JobRecord> DatabaseManager::listOpenJobsForMechanic(MechanicId mecha
 
         SQLite::Statement stmt(
             db,
-            "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, lastNote, updatedAt, startedAt, completedAt, completionNote "
+            "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt, completedAt "
             "FROM jobs WHERE mechanicId = ? AND stage != ?"
         );
 
@@ -660,11 +675,9 @@ std::vector<JobRecord> DatabaseManager::listOpenJobsForMechanic(MechanicId mecha
             rec.vehicleId = static_cast<VehicleId>(stmt.getColumn(4).getInt64());
             rec.stage = static_cast<JobStage>(stmt.getColumn(5).getInt());
             rec.percentComplete = stmt.getColumn(6).getInt();
-            rec.lastNote = stmt.getColumn(7).isNull() ? "" : stmt.getColumn(7).getText();
-            rec.updatedAt = stmt.getColumn(8).isNull() ? "" : stmt.getColumn(8).getText();
-            rec.startedAt = stmt.getColumn(9).isNull() ? "" : stmt.getColumn(9).getText();
-            rec.completedAt = stmt.getColumn(10).isNull() ? "" : stmt.getColumn(10).getText();
-            rec.completionNote = stmt.getColumn(11).isNull() ? "" : stmt.getColumn(11).getText();
+            rec.updatedAt = stmt.getColumn(7).isNull() ? "" : stmt.getColumn(7).getText();
+            rec.startedAt = stmt.getColumn(8).isNull() ? "" : stmt.getColumn(8).getText();
+            rec.completedAt = stmt.getColumn(9).isNull() ? "" : stmt.getColumn(9).getText();
 
             results.push_back(std::move(rec));
         }
@@ -676,7 +689,7 @@ std::vector<JobRecord> DatabaseManager::listOpenJobsForMechanic(MechanicId mecha
     }
 }
 
-bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentComplete, const std::string &note)
+bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentComplete)
 {
     if (jobId <= 0) return false;
 
@@ -685,14 +698,13 @@ bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentCom
 
         SQLite::Statement stmt(
             db,
-            "UPDATE jobs SET stage = ?, percentComplete = ?, lastNote = ?, updatedAt = ? WHERE id = ?"
+            "UPDATE jobs SET stage = ?, percentComplete = ?, updatedAt = ? WHERE id = ?"
         );
 
         stmt.bind(1, static_cast<int>(stage));
         stmt.bind(2, percentComplete);
-        stmt.bind(3, note);
-        stmt.bind(4, nowISO());
-        stmt.bind(5, static_cast<int64_t>(jobId));
+        stmt.bind(3, nowISO());
+        stmt.bind(4, static_cast<int64_t>(jobId));
 
         return stmt.exec() > 0;
     }
@@ -701,7 +713,7 @@ bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentCom
     }
 }
 
-bool DatabaseManager::markJobComplete(JobId jobId, const std::string &completionNote)
+bool DatabaseManager::markJobComplete(JobId jobId)
 {
     if (jobId <= 0) return false;
 
@@ -710,20 +722,78 @@ bool DatabaseManager::markJobComplete(JobId jobId, const std::string &completion
 
         SQLite::Statement stmt(
             db,
-            "UPDATE jobs SET stage = ?, percentComplete = ?, completionNote = ?, completedAt = ?, updatedAt = ? WHERE id = ?"
+            "UPDATE jobs SET stage = ?, percentComplete = ?, completedAt = ?, updatedAt = ? WHERE id = ?"
         );
 
         stmt.bind(1, static_cast<int>(JobStage::DONE));
         stmt.bind(2, 100);
-        stmt.bind(3, completionNote);
+        stmt.bind(3, nowISO());
         stmt.bind(4, nowISO());
-        stmt.bind(5, nowISO());
-        stmt.bind(6, static_cast<int64_t>(jobId));
+        stmt.bind(5, static_cast<int64_t>(jobId));
 
         return stmt.exec() > 0;
     }
     catch (const SQLite::Exception& e) {
         throw std::runtime_error(std::string("markJobComplete failed: ") + e.what());
+    }
+}
+
+// ==================== Job Notes CRUD ====================
+
+JobNoteId DatabaseManager::addJobNote(JobId jobId, const std::string &type, const std::string &text)
+{
+    if (jobId <= 0) return -1;
+
+    try {
+        ensureJobNotesSchema(db);
+
+        SQLite::Statement stmt(
+            db,
+            "INSERT INTO job_notes (jobId, type, text, createdAt) VALUES (?, ?, ?, ?)"
+        );
+
+        stmt.bind(1, static_cast<int64_t>(jobId));
+        stmt.bind(2, type);
+        stmt.bind(3, text);
+        stmt.bind(4, nowISO());
+
+        stmt.exec();
+        return static_cast<JobNoteId>(db.getLastInsertRowid());
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("addJobNote failed: ") + e.what());
+    }
+}
+
+std::vector<JobNoteRecord> DatabaseManager::listJobNotes(JobId jobId)
+{
+    std::vector<JobNoteRecord> results;
+    if (jobId <= 0) return results;
+
+    try {
+        ensureJobNotesSchema(db);
+
+        SQLite::Statement stmt(
+            db,
+            "SELECT id, jobId, type, text, createdAt FROM job_notes WHERE jobId = ? ORDER BY createdAt ASC, id ASC"
+        );
+
+        stmt.bind(1, static_cast<int64_t>(jobId));
+
+        while (stmt.executeStep()) {
+            JobNoteRecord rec{};
+            rec.id = static_cast<JobNoteId>(stmt.getColumn(0).getInt64());
+            rec.jobId = static_cast<JobId>(stmt.getColumn(1).getInt64());
+            rec.type = stmt.getColumn(2).isNull() ? "update" : stmt.getColumn(2).getText();
+            rec.text = stmt.getColumn(3).isNull() ? "" : stmt.getColumn(3).getText();
+            rec.createdAt = stmt.getColumn(4).isNull() ? "" : stmt.getColumn(4).getText();
+            results.push_back(std::move(rec));
+        }
+
+        return results;
+    }
+    catch (const SQLite::Exception& e) {
+        throw std::runtime_error(std::string("listJobNotes failed: ") + e.what());
     }
 }
 
@@ -1223,6 +1293,7 @@ void DatabaseManager::resetDatabase()
     {
         db.exec("PRAGMA foreign_keys = OFF");
         db.exec("DROP TABLE IF EXISTS reviews");
+        db.exec("DROP TABLE IF EXISTS job_notes");
         db.exec("DROP TABLE IF EXISTS jobs");
         db.exec("DROP TABLE IF EXISTS appointments");
         db.exec("DROP TABLE IF EXISTS mechanic_availability");
