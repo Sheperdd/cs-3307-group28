@@ -17,6 +17,8 @@ add_executable(TorqueClient
         LandingPage.h
         SignUpPage.cpp
         SignUpPage.h
+        LoginPage.cpp
+        LoginPage.h
 )
 
 target_link_libraries(TorqueClient

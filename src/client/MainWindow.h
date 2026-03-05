@@ -10,6 +10,7 @@
 class QStackedWidget;
 class LandingPage;
 class SignUpPage;
+class LoginPage;
 
 class MainWindow : public QMainWindow{
     Q_OBJECT
@@ -22,20 +23,25 @@ private :
 
     LandingPage *landingPage;
     SignUpPage *signUpPage;
+    LoginPage *loginPage;
+
 
     enum PageIndex{
-        LandingIndex =0, SignUpIndex =1
+        LandingIndex =0, SignUpIndex =1, LoginIndex
     };
 
 
     void showLandingPage();
     void showSignUpPage();
+    void showLoginPage();
 private slots:
     void handleSignUpSubmitted(const QString &fname,
                             const QString &lname,
                             const QString &email,
                             const QString &password,
                             const QString &confirmPassword);
+
+    void handleLoginSubmitted(const QString &email, const QString &password);
 };
 
 
