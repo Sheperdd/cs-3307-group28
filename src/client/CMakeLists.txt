@@ -13,6 +13,10 @@ add_executable(TorqueClient
         main.cpp
         MainWindow.cpp
         MainWindow.h
+        LandingPage.cpp
+        LandingPage.h
+        SignUpPage.cpp
+        SignUpPage.h
 )
 
 target_link_libraries(TorqueClient

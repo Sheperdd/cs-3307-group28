@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
 
     //creating pages
     landingPage = new LandingPage(this);
-    signUpPage = new LandingPage(this);
+    signUpPage = new SignUpPage(this);
 
     //creating stack in known order
     stack->addWidget(landingPage);

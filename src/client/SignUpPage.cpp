@@ -75,7 +75,7 @@ SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
 
 
     //Connections
-    connect(&signUpButton, &QPushButton::clicked, this, [this](){
+    connect(signUpButton, &QPushButton::clicked, this, [this](){
         emit signUpSubmitted(
             m_fnameEdit -> text(),
             m_lnameEdit -> text(),
@@ -85,7 +85,7 @@ SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
         );
     });
 
-    connect(&backButton, &QPushButton::clicked, this, [this](){
+    connect(backButton, &QPushButton::clicked, this, [this](){
         emit backRequested();
     });
 

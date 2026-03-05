@@ -8,8 +8,8 @@
 #pragma once
 #include <QWidget>
 
+#include <QPushButton>
 class QLineEdit;
-class QPushButton;
 class QLabel;
 
 
@@ -36,7 +36,7 @@ private:
     QLabel *m_titleLabel ,*m_errorLabel;
     QLineEdit *m_fnameEdit, *m_lnameEdit, *m_emailEdit, *m_passwordEdit, *m_confirmPasswordEdit;
 
-    QPushButton signUpButton, backButton;
+    QPushButton *signUpButton, *backButton;
 };
 
 
