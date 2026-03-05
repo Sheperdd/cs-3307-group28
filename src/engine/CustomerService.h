@@ -59,7 +59,7 @@ public:
     bool removeVehicle(VehicleId vehicleId);
 
     // Symptom Form Management
-    SymptomFormId createSymptomForm(UserId customerId, VehicleId vehicleId, const SymptomFormCreate &form);
+    SymptomFormId createSymptomForm(const SymptomFormCreate &form);
     SymptomFormDTO getSymptomForm(SymptomFormId formId);
     std::vector<SymptomFormDTO> listSymptomForms(UserId customerId);
     bool updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates);

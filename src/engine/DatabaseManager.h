@@ -72,11 +72,11 @@ public:
     bool deleteVehicle(VehicleId vehicleId);
 
     // Symptom Forms
-    SymptomFormId createSymptomForm(UserId customerId, VehicleId vehicleId, const SymptomFormRecord &form);
-    std::optional<SymptomFormRecord> getSymptomFormById(SymptomFormId formId);
-    std::vector<SymptomFormRecord> listSymptomFormsForCustomer(UserId customerId);
-    bool updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates);
-    bool deleteSymptomForm(SymptomFormId formId);
+    SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form);
+    SymptomFormRecord DatabaseManager::getSymptomFormById(SymptomFormId formId);
+    std::vector<SymptomFormRecord> DatabaseManager::listSymptomFormsForCustomer(UserId customerId);
+    bool DatabaseManager::updateSymptomForm (SymptomFormId formId, const SymptomFormUpdate &updates);
+    bool DatabaseManager::deleteSymptomForm(SymptomFormId formId);
 
     // Mechanics
     std::optional<MechanicRecord> getMechanicByUserId(UserId userId);

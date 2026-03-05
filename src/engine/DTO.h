@@ -97,6 +97,8 @@ struct VehicleDTO
 // POST /users/{userId}/symptoms  — frontend → server
 struct SymptomFormCreate
 {
+    UserId customerId{};
+    VehicleId vehicleId{};
     std::string description;
     int severity{0}; // 1-5
 };

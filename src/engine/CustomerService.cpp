@@ -381,38 +381,72 @@ bool CustomerService::updateCustomerPasswordHash(UserId customerId, const std::s
 // =====================================================================
 
 // TODO: Implement symptom form creation
-SymptomFormId CustomerService::createSymptomForm(UserId customerId, VehicleId vehicleId, const SymptomFormCreate &form)
+SymptomFormId CustomerService::createSymptomForm(const SymptomFormCreate &form)
 {
-	// TODO: Implement — validate ownership, validate form, call db->createSymptomForm()
-	return -1;
+	if(form.customerId <= 0) throw std::invalid_argument("createSymptomForm: invalid customerId");
+	else if(form.vehicleId <= 0) throw std::invalid_argument("createSymptomForm: invalid vehicleId");
+	else if(!validator.validateSymptomForm(form)) throw std::invalid_argument("createSymptomForm: invalid symptom form");
+	SymptomFormRecord rec{};
+	rec.customerId = form.customerId;
+	rec.vehicleId = form.vehicleId;
+	rec.description = form.description;
+	rec.severity = form.severity;
+	return db->createSymptomForm(rec);
 }
 
 // TODO: Implement get single symptom form
 SymptomFormDTO CustomerService::getSymptomForm(SymptomFormId formId)
 {
-	// TODO: Implement — fetch from DB, convert SymptomFormRecord to SymptomFormDTO
-	return {};
+	if (formId <= 0)
+	{
+		throw std::invalid_argument("getSymptomForm: invalid formId");
+	}
+	auto formRec = db->getSymptomFormById(formId);
+	SymptomFormDTO dto{};
+	dto.formId = formRec.id;
+	dto.customerId = formRec.customerId;
+	dto.vehicleId = formRec.vehicleId;
+	dto.description = formRec.description;
+	dto.severity = formRec.severity;
+	dto.createdAt = formRec.createdAt;
+	return dto;
 }
 
 // TODO: Implement list symptom forms for customer
 std::vector<SymptomFormDTO> CustomerService::listSymptomForms(UserId customerId)
 {
-	// TODO: Implement — call db->listSymptomFormsForCustomer(), convert to DTOs
-	return {};
+	if(customerId <= 0) throw std::invalid_argument("listSymptomForms: invalid customerId");
+	auto formRecs = db->listSymptomFormsForCustomer(customerId);
+	std::vector<SymptomFormDTO> dtos;
+	dtos.reserve(formRecs.size());
+	for(const auto &formRec : formRecs){
+		SymptomFormDTO dto{};
+		dto.formId = formRec.id;
+		dto.customerId = formRec.customerId;
+		dto.vehicleId = formRec.vehicleId;
+		dto.description = formRec.description;
+		dto.severity = formRec.severity;
+		dto.createdAt = formRec.createdAt;
+		dtos.push_back(std::move(dto));
+	}
+	return dtos;
 }
 
 // TODO: Implement symptom form update
 bool CustomerService::updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates)
 {
-	// TODO: Implement — validate, call db->updateSymptomForm()
-	return false;
+	if(formId <= 0) throw std::invalid_argument("updatteSymptomForm: invalid formid");
+	SymptomFormRecord recUpdate{};
+	if(updates.description.has_value()) recUpdate.description = updates.description.value();
+	if(updates.severity.has_value()) recUpdate.severity = updates.severity.value();
+	return db->updateSymptomForm(formId, updates);
 }
 
 // TODO: Implement symptom form deletion
 bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 {
-	// TODO: Implement — call db->deleteSymptomForm()
-	return false;
+	if(formId <= 0) throw std::invalid_argument("deleteSymptomForm: invalid formId");
+	return db->deleteSymptomForm(formId);
 }
 
 // =====================================================================
