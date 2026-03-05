@@ -216,8 +216,7 @@ AppointmentsHandler::updateAppointmentStatus(AppointmentId id, const http::reque
         Result r;
         try
         {
-          ctx.customerService.updateAppointmentStatus(id, statusUpdate);
-          r.success = true;
+          r.success = ctx.customerService.updateAppointmentStatus(id, statusUpdate);
         }
         catch (const std::exception &e)
         {
@@ -229,7 +228,8 @@ AppointmentsHandler::updateAppointmentStatus(AppointmentId id, const http::reque
   if (!res.error.empty())
     co_return http_utils::make_error(http::status::internal_server_error,
                                      res.error, ver, ka);
-  if (!res.success)    co_return http_utils::make_error(http::status::bad_request,
+  if (!res.success)
+    co_return http_utils::make_error(http::status::bad_request,
                                      "Could not update appointment status", ver, ka);
   co_return http_utils::make_json_response(http::status::ok,
                                            json{{"message", "Appointment status updated successfully"}}, ver, ka);

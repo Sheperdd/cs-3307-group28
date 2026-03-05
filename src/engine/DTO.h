@@ -47,7 +47,6 @@ struct CustomerCreate
     std::string phone;
     std::string passwordHash;
     std::string createdAt; // ISO string
-    std::string phone;
     //Confirm password,phone,createdat should be added -Daimen
 };
 

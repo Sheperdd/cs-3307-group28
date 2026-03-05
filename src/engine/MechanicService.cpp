@@ -114,11 +114,11 @@ std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mec
 
             // Get symptom form
             if (appt.symptomFormId > 0) {
-                auto form = db.getSymptomFormById(appt.symptomFormId);
-                if (form.has_value()) {
-                    view.symptoms = form->description;
-                    view.severity = form->severity;
-                }
+                try {
+                    auto form = db.getSymptomFormById(appt.symptomFormId);
+                    view.symptoms = form.description;
+                    view.severity = form.severity;
+                } catch (...) {}
             }
 
             requests.push_back(view);
@@ -253,11 +253,11 @@ AppointmentDTO MechanicService::getAppointmentDetails(AppointmentId appointmentI
     }
 
     if (appt->symptomFormId > 0){
-        auto form = db.getSymptomFormById(appt->symptomFormId);
-        if (form.has_value()){
-            details.symptoms = form->description;
-            details.severity = form->severity;
-        }
+        try {
+            auto form = db.getSymptomFormById(appt->symptomFormId);
+            details.symptoms = form.description;
+            details.severity = form.severity;
+        } catch (...) {}
     }
 
     return details;

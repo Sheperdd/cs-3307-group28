@@ -256,6 +256,20 @@ UserId DatabaseManager::createUser(const UserRecord &user)
     }
 }
 
+UserId DatabaseManager::createUser(const std::string &name,
+                                   const std::string &email,
+                                   const std::string &passwordHash,
+                                   UserRole role)
+{
+    UserRecord rec{};
+    rec.name = name;
+    rec.email = email;
+    rec.passwordHash = passwordHash;
+    rec.role = role;
+    rec.createdAt = nowISO();
+    return createUser(rec);
+}
+
 std::optional<UserRecord> DatabaseManager::getUserRecordById(UserId id)
 {
     try
@@ -1095,7 +1109,9 @@ SymptomFormRecord DatabaseManager::getSymptomFormById(SymptomFormId formId){
     catch(const SQLite::Exception &e){
         throw std::runtime_error(std::string("getSymptomFormById failed: ") + e.what());
     }
+    throw std::runtime_error("getSymptomFormById: form not found");
 }
+
 SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form){
     ensureSymptomFormsSchema(db);
     SQLite::Statement stmt(
