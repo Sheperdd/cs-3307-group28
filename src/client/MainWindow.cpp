@@ -7,6 +7,7 @@
 #include <QDebug>
 
 #include "LandingPage.h"
+#include "LoginPage.h"
 #include "SignUpPage.h"
 
 
@@ -40,7 +41,7 @@ connect(signUpPage, &SignUpPage::backRequested,
 connect(signUpPage, &SignUpPage::signUpSubmitted,
         this, &MainWindow::handleSignUpSubmitted);
 
-    
+connect(loginPage, &LoginPage::loginSubmitted, this, &MainWindow::handleLoginSubmitted);
 }
 
 MainWindow::~MainWindow(){
@@ -55,10 +56,14 @@ void MainWindow::showSignUpPage(){
     stack -> setCurrentIndex(SignUpIndex);
 }
 
+void MainWindow::showLoginPage(){
+    stack -> setCurrentIndex(LoginIndex);
+}
+
 void MainWindow::handleSignUpSubmitted(const QString& fname, const QString& lname,
-    const QString& email,
-    const QString& password,
-    const QString& confirmPassword){
+                                       const QString& email,
+                                       const QString& password,
+                                       const QString& confirmPassword){
 
     qDebug() << "Sign-up submitted:"
             << "name = " << fname << " " << lname
@@ -70,4 +75,9 @@ void MainWindow::handleSignUpSubmitted(const QString& fname, const QString& lnam
     }
 
     showLandingPage();
+}
+
+void MainWindow::handleLoginSubmitted(const QString& email, const QString& password){
+
+
 }
