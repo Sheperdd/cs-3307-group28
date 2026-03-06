@@ -4,6 +4,7 @@
 
 #include "LandingPage.h"
 #include "LoginPage.h"
+#include "PasswordResetPage.h"
 #include "SignUpPage.h"
 
 
@@ -17,11 +18,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
     landingPage = new LandingPage(this);
     signUpPage = new SignUpPage(this);
     loginPage = new LoginPage(this);
-
+    passwordResetPage = new PasswordResetPage(this);
+    
     //creating stack in known order
     stack->addWidget(landingPage);
     stack->addWidget(signUpPage);
     stack->addWidget(loginPage);
+    stack->addWidget(passwordResetPage);
 
     //starting on the landing page
     stack->setCurrentIndex(LandingIndex);
@@ -45,10 +48,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
     //handling the login submitted
     connect(loginPage, &LoginPage::loginSubmitted, this, &MainWindow::handleLoginSubmitted);
 
-//    connect (loginPage, &LoginPage::passwordResetRequested, this, &LoginPage::passwordResetRequested());
+    connect (loginPage, &LoginPage::passwordResetRequested, this, &MainWindow::showPasswordResetPage);
 
     connect(loginPage, &LoginPage::backRequested, this, &MainWindow::showLandingPage);
 
+
+    connect(passwordResetPage, &PasswordResetPage::backRequested, this, &MainWindow::showLoginPage);
 }
 
 
@@ -68,6 +73,11 @@ void MainWindow::showSignUpPage(){
 void MainWindow::showLoginPage(){
     stack -> setCurrentIndex(LoginIndex);
 }
+
+void MainWindow::showPasswordResetPage(){
+    stack -> setCurrentIndex(PasswordReset);
+}
+
 
 void MainWindow::handleSignUpSubmitted(const QString& fname, const QString& lname,
                                        const QString& email,
@@ -91,8 +101,7 @@ void MainWindow::handleLoginSubmitted(const QString& email, const QString& passw
 
 }
 
-void MainWindow::resetPasswordSubmitted(const QString oldPassword,
-                                        const QString newPassword)
+void MainWindow::resetPasswordSubmitted(const QString oldPassword, const QString newPassword)
 {
     // TODO: implement your real logic here
     qDebug() << "Password reset requested. Old password:" << oldPassword
