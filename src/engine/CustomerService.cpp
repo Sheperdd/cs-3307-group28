@@ -549,22 +549,43 @@ bool CustomerService::updateAppointmentStatus(AppointmentId appointmentId, Appoi
 // =====================================================================
 
 // TODO: Implement review submission
-ReviewId CustomerService::submitReview(UserId customerId, JobId jobId, const ReviewCreate &review)
+ReviewId CustomerService::submitReview(const ReviewCreate &review)
 {
-	// TODO: Implement — validate with canReviewJob(), create ReviewRecord, call db->createReview()
-	return -1;
+	if(!validator.validateReview(review)) throw std::invalid_argument("submitReview: invalid review");
+	ReviewRecord rec{};
+	rec.customerId = review.customerId;
+	rec.mechanicId = review.mechanicId;
+	rec.jobId = review.jobId;
+	rec.rating = review.rating;
+	rec.comment = review.comment;
+	ReviewId id = db->createReview(rec);
+	return id;
 }
 
 // TODO: Implement list reviews by customer
 std::vector<ReviewDTO> CustomerService::listMyReviews(UserId customerId)
 {
-	// TODO: Implement — call db->listReviewsForCustomer(), convert to DTOs
-	return {};
+	if(customerId <= 0) throw std::invalid_argument("listMyReviews: invalid customerId");
+	auto reviewRecs = db->listReviewsForCustomer(customerId);
+	std::vector<ReviewDTO> dtos;
+	dtos.reserve(reviewRecs.size());
+	for(const auto &reviewRec : reviewRecs){
+		ReviewDTO dto{};
+		dto.reviewId = reviewRec.id;
+		dto.customerId = reviewRec.customerId;
+		dto.mechanicId = reviewRec.mechanicId;
+		dto.jobId = reviewRec.jobId;
+		dto.rating = reviewRec.rating;
+		dto.comment = reviewRec.comment;
+		dto.createdAt = reviewRec.createdAt;
+		dtos.push_back(std::move(dto));
+	}
+	return dtos;
 }
 
 // TODO: Implement review deletion
 bool CustomerService::deleteMyReview(UserId customerId, ReviewId reviewId)
 {
-	// TODO: Implement — verify ownership, call db->deleteReview()
-	return false;
+	if(customerId<1||reviewId<0) throw std::invalid_argument("deleteReview: invalid customerid or review id");
+	db->deleteReview(reviewId);
 }

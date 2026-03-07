@@ -236,6 +236,9 @@ struct JobDTO
 // POST /reviews  — frontend → server
 struct ReviewCreate
 {
+    UserId customerId{};
+    MechanicId mechanicId{};
+    JobId jobId{};
     int rating{0}; // 1-5
     std::string comment;
 };
@@ -246,6 +249,7 @@ struct ReviewDTO
     ReviewId reviewId{};
     MechanicId mechanicId{};
     UserId customerId{};
+    JobId jobId{};
     int rating{0};
     std::string comment;
     std::string createdAt;    // ISO datetime

@@ -1235,6 +1235,41 @@ bool DatabaseManager::deleteSymptomForm(SymptomFormId formId){
 
 // ==================== Reviews ====================
 
+ReviewId DatabaseManager::createReview(const ReviewRecord &review){
+    SQLite::Statement stmt{db,
+        "INSERT INTO reviews(jobId, customerId, mechanicId, rating, comment, createdAt) VALUES (?, ?, ?, ?, ?, ?)"};
+    stmt.bind(1, static_cast<int64_t>(review.jobId));
+    stmt.bind(2, static_cast<int64_t>(review.customerId));
+    stmt.bind(3, static_cast<int64_t>(review.mechanicId));
+    stmt.bind(4, review.rating);
+    stmt.bind(5, review.comment);
+    stmt.bind(6, nowISO());
+    stmt.exec();
+    return static_cast<ReviewId>(db.getLastInsertRowid());
+}
+std::vector<ReviewRecord> DatabaseManager::listReviewsForCustomer(UserId id){
+    std::vector<ReviewRecord> results;
+    try{
+        SQLite::Statement stmt(db,
+            "SELECT * FROM reviews WHERE customerId = ?");
+            stmt.bind(1, static_cast<int64_t>(id));
+            while(stmt.executeStep()){
+                ReviewRecord r;
+                r.id = stmt.getColumn(0).getInt64();
+                r.jobId = stmt.getColumn(1).getInt64();
+                r.customerId = stmt.getColumn(2).getInt64();
+                r.mechanicId = stmt.getColumn(3).getInt64();
+                r.rating = stmt.getColumn(4).getInt();
+                r.comment = stmt.getColumn(5).getText();
+                r.createdAt = stmt.getColumn(6).getText();
+                results.push_back(std::move(r));
+            }
+    }
+    catch(const SQLite::Exception &e){
+        throw std::runtime_error(std::string("listReviewsForCustomer failed: ") + e.what());
+    }
+    return results;
+}
 std::vector<ReviewRecord> DatabaseManager::listReviewsForMechanic(MechanicId mechanicId)
 {
     std::vector<ReviewRecord> results;
@@ -1260,6 +1295,13 @@ std::vector<ReviewRecord> DatabaseManager::listReviewsForMechanic(MechanicId mec
     } catch (const SQLite::Exception &e) {
         throw std::runtime_error(std::string("listReviewsForMechanic failed: ") + e.what());
     }
+}
+bool DatabaseManager::deleteReview(ReviewId reviewId){
+    SQLite::Statement stmt(db,
+        "DELETE FROM reviews WHERE id=?"
+    );
+    stmt.bind(1,static_cast<int64_t>(reviewId));
+    return stmt.exec()>0;
 }
 
 // ==================== Convenience wrappers ====================

@@ -83,7 +83,7 @@ public:
     void unsubscribeFromJobUpdates(SubscriptionId subscriptionId);
 
     // Review Management
-    ReviewId submitReview(UserId customerId, JobId jobId, const ReviewCreate &review);
+    ReviewId submitReview(const ReviewCreate &review);
     std::vector<ReviewDTO> listMyReviews(UserId customerId);
     bool deleteMyReview(UserId customerId, ReviewId reviewId);
 };

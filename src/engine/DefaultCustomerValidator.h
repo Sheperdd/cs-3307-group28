@@ -25,6 +25,7 @@ public:
 
     bool validateReview(const ReviewCreate& review) override
     {
+        //validate userid and jobid
         return review.rating >= 1 && review.rating <= 5;
     }
     bool validateAppointment(const AppointmentCreate& appointment) override
