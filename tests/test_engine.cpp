@@ -6,6 +6,9 @@
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <cstdio> // For removing the file
 
+#include "MechanicService.h"
+#include "DatabaseManager.h"
+
 // ---- Minimal implementations for tests ----
 RatingEngine::RatingEngine(DatabaseManager& db, int recencyHalfLifeDays)
     : db(db), recencyHalfLifeDays(recencyHalfLifeDays)
@@ -494,4 +497,204 @@ TEST_F(DatabaseTests, CustomerServiceUnsubscribeFromJobUpdates) {
 
     EXPECT_NO_THROW(service.unsubscribeFromJobUpdates(1));
     EXPECT_THROW(service.unsubscribeFromJobUpdates(0), std::invalid_argument);
+}
+
+// Story 3: Can see incoming job requests
+TEST_F(DatabaseTests, ListIncomingRequests) {
+    DatabaseManager db;
+    MechanicService service(db);
+
+    auto customerId     = db.createUser("Customer1", "cust1@test.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("Mechanic1", "mech1@test.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mUpdate;
+    mUpdate.displayName = std::string("Mechanic1");
+    mUpdate.shopName    = std::string("Shop1");
+    mUpdate.hourlyRate  = 80.0;
+    db.updateMechanicProfile(mechanicUserId, mUpdate);
+
+    auto mechRecord = db.getMechanicByUserId(mechanicUserId);
+    ASSERT_TRUE(mechRecord.has_value());
+    auto mechanicId = mechRecord->id;
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VIN00000001";
+    vehicle.make = "Honda"; vehicle.model = "Civic"; vehicle.year = 2020; vehicle.mileage = 1000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)");
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Brakes squeaking");
+    symptomInsert.bind(4, 2);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+
+    AppointmentRecord appt{};
+    appt.customerId   = customerId;
+    appt.mechanicId   = mechanicId;
+    appt.vehicleId    = vehicleId;
+    appt.symptomFormId = symptomFormId;
+    appt.scheduledAt  = "2026-05-01T10:00:00Z";
+    appt.status       = AppointmentStatus::REQUESTED;
+    appt.note         = "Check brakes";
+    db.createAppointment(appt);
+
+    auto requests = service.listIncomingRequests(mechanicId);
+    EXPECT_FALSE(requests.empty());
+}
+
+// Story 9: Can accept an appointment
+TEST_F(DatabaseTests, AcceptAppointment) {
+    DatabaseManager db;
+    MechanicService service(db);
+
+    auto customerId     = db.createUser("Customer2", "cust2@test.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("Mechanic2", "mech2@test.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mUpdate;
+    mUpdate.displayName = std::string("Mechanic2");
+    mUpdate.shopName    = std::string("Shop2");
+    mUpdate.hourlyRate  = 80.0;
+    db.updateMechanicProfile(mechanicUserId, mUpdate);
+
+    auto mechRecord = db.getMechanicByUserId(mechanicUserId);
+    ASSERT_TRUE(mechRecord.has_value());
+    auto mechanicId = mechRecord->id;
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VIN00000002";
+    vehicle.make = "Toyota"; vehicle.model = "Camry"; vehicle.year = 2021; vehicle.mileage = 5000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)");
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Oil change needed");
+    symptomInsert.bind(4, 1);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+
+    AppointmentRecord appt{};
+    appt.customerId    = customerId;
+    appt.mechanicId    = mechanicId;
+    appt.vehicleId     = vehicleId;
+    appt.symptomFormId = symptomFormId;
+    appt.scheduledAt   = "2026-05-01T10:00:00Z";
+    appt.status        = AppointmentStatus::REQUESTED;
+    appt.note          = "Oil change";
+    auto appointmentId = db.createAppointment(appt);
+
+    bool result = service.AcceptAppointment(appointmentId);
+    EXPECT_TRUE(result);
+}
+
+// Story 1: Can update job stage with a note
+TEST_F(DatabaseTests, UpdateJobStage) {
+    DatabaseManager db;
+    MechanicService service(db);
+
+    auto customerId     = db.createUser("Customer3", "cust3@test.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("Mechanic3", "mech3@test.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mUpdate;
+    mUpdate.displayName = std::string("Mechanic3");
+    mUpdate.shopName    = std::string("Shop3");
+    mUpdate.hourlyRate  = 80.0;
+    db.updateMechanicProfile(mechanicUserId, mUpdate);
+
+    auto mechRecord = db.getMechanicByUserId(mechanicUserId);
+    ASSERT_TRUE(mechRecord.has_value());
+    auto mechanicId = mechRecord->id;
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VIN00000003";
+    vehicle.make = "Ford"; vehicle.model = "Focus"; vehicle.year = 2019; vehicle.mileage = 30000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)");
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Brake pads worn");
+    symptomInsert.bind(4, 3);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+
+    AppointmentRecord appt{};
+    appt.customerId    = customerId;
+    appt.mechanicId    = mechanicId;
+    appt.vehicleId     = vehicleId;
+    appt.symptomFormId = symptomFormId;
+    appt.scheduledAt   = "2026-05-01T10:00:00Z";
+    appt.status        = AppointmentStatus::CONFIRMED;
+    appt.note          = "Brake pads";
+    auto appointmentId = db.createAppointment(appt);
+    auto jobId = db.createJobFromAppointment(appointmentId);
+    db.updateJobStage(jobId, JobStage::DIAGNOSTICS, 0);
+
+    bool result = service.updateJobStage(mechanicId, jobId, JobStage::REPAIR, 50, "Replacing brake pads");
+    EXPECT_TRUE(result);
+}
+
+// Story 1: Can mark job as complete
+TEST_F(DatabaseTests, MarkJobComplete) {
+    DatabaseManager db;
+    MechanicService service(db);
+
+    auto customerId     = db.createUser("Customer4", "cust4@test.com", "pw", UserRole::CUSTOMER);
+    auto mechanicUserId = db.createUser("Mechanic4", "mech4@test.com", "pw", UserRole::MECHANIC);
+
+    MechanicUpdate mUpdate;
+    mUpdate.displayName = std::string("Mechanic4");
+    mUpdate.shopName    = std::string("Shop4");
+    mUpdate.hourlyRate  = 80.0;
+    db.updateMechanicProfile(mechanicUserId, mUpdate);
+
+    auto mechRecord = db.getMechanicByUserId(mechanicUserId);
+    ASSERT_TRUE(mechRecord.has_value());
+    auto mechanicId = mechRecord->id;
+
+    VehicleRecord vehicle{};
+    vehicle.ownerUserId = customerId;
+    vehicle.vin = "VIN00000004";
+    vehicle.make = "Chevy"; vehicle.model = "Malibu"; vehicle.year = 2018; vehicle.mileage = 60000;
+    auto vehicleId = db.createVehicle(customerId, vehicle);
+    ASSERT_GT(vehicleId, 0);
+
+    SQLite::Database rawDb("torquedesk.db", SQLite::OPEN_READWRITE);
+    SQLite::Statement symptomInsert(rawDb,
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity) VALUES (?, ?, ?, ?)");
+    symptomInsert.bind(1, static_cast<int64_t>(customerId));
+    symptomInsert.bind(2, static_cast<int64_t>(vehicleId));
+    symptomInsert.bind(3, "Full service needed");
+    symptomInsert.bind(4, 1);
+    symptomInsert.exec();
+    auto symptomFormId = static_cast<SymptomFormId>(rawDb.getLastInsertRowid());
+
+    AppointmentRecord appt{};
+    appt.customerId    = customerId;
+    appt.mechanicId    = mechanicId;
+    appt.vehicleId     = vehicleId;
+    appt.symptomFormId = symptomFormId;
+    appt.scheduledAt   = "2026-05-01T10:00:00Z";
+    appt.status        = AppointmentStatus::CONFIRMED;
+    appt.note          = "Full service";
+    auto appointmentId = db.createAppointment(appt);
+    auto jobId = db.createJobFromAppointment(appointmentId);
+    db.updateJobStage(jobId, JobStage::DIAGNOSTICS, 0);
+
+    bool result = service.markJobComplete(mechanicId, jobId, "All repairs done");
+    EXPECT_TRUE(result);
 }
