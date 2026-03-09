@@ -5,6 +5,7 @@
 #include <QApplication>
 
 #include "HomePage.h"
+#include "LandingPage.h"
 #include "MainWindow.h"
 
 int main(int argc, char *argv[])
@@ -12,7 +13,7 @@ int main(int argc, char *argv[])
     qDebug() << "Starting TorqueDesk client...";
     QApplication app(argc, argv);
 
-    HomePage window;
+    MainWindow window;
     window.show();
 
     int result = app.exec();

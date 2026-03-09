@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QComboBox>
 
 
 SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
@@ -39,6 +40,9 @@ SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
     m_emailEdit = new QLineEdit(this);
     m_emailEdit->setPlaceholderText(tr("Please enter your email"));
 
+    m_userType = new QComboBox(this );
+    m_userType -> addItem(tr("Customer"), QVariant("customer"));
+    m_userType -> addItem(tr("Mechanic"), QVariant("mechanic"));
 
     m_passwordEdit = new QLineEdit();
     m_passwordEdit->setEchoMode(QLineEdit::Password);
@@ -53,6 +57,7 @@ SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
     formLayout -> addRow(tr("First Name"), m_fnameEdit);
     formLayout -> addRow(tr("Last Name"), m_lnameEdit);
     formLayout -> addRow(tr("Email"), m_emailEdit);
+    formLayout -> addRow(tr("Select type of the account "), m_userType);
     formLayout -> addRow(tr("Password"), m_passwordEdit);
     formLayout -> addRow(tr("Confirm Password"), m_confirmPasswordEdit);
 
@@ -80,6 +85,7 @@ SignUpPage::SignUpPage(QWidget* parent): QWidget(parent){
             m_fnameEdit -> text(),
             m_lnameEdit -> text(),
             m_emailEdit -> text(),
+            m_userType->currentData().toString(),
             m_passwordEdit -> text(),
             m_confirmPasswordEdit-> text()
         );

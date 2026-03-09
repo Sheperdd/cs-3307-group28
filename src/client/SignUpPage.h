@@ -9,6 +9,7 @@
 #include <QWidget>
 
 #include <QPushButton>
+#include <QComboBox>
 class QLineEdit;
 class QLabel;
 
@@ -27,6 +28,7 @@ signals:
     void signUpSubmitted(const QString &fname,
         const QString &lname,
         const QString &mail,
+        const QString &userType,
         const QString &password,
         const QString &confirmPassword);
 
@@ -35,7 +37,7 @@ signals:
 private:
     QLabel *m_titleLabel ,*m_errorLabel;
     QLineEdit *m_fnameEdit, *m_lnameEdit, *m_emailEdit, *m_passwordEdit, *m_confirmPasswordEdit;
-
+    QComboBox *m_userType;
     QPushButton *signUpButton, *backButton;
 };
 
