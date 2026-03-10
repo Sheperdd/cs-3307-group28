@@ -25,7 +25,7 @@ static std::string nowISO()
 }
 
 // ---- Schema helpers — each creates one table + indexes if missing ----
-static void ensureCustomersSchema(SQLite::Database& db)
+static void ensureCustomersSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS customers ("
@@ -35,11 +35,10 @@ static void ensureCustomersSchema(SQLite::Database& db)
         "phone TEXT, "
         "password TEXT NOT NULL, "
         "role INTEGER NOT NULL CHECK(role IN (0, 1)), "
-        "createdAt TEXT NOT NULL DEFAULT (datetime('now')))"
-    );
+        "createdAt TEXT NOT NULL DEFAULT (datetime('now')))");
 }
 
-static void ensureVehiclesSchema(SQLite::Database& db)
+static void ensureVehiclesSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS vehicles ("
@@ -51,12 +50,11 @@ static void ensureVehiclesSchema(SQLite::Database& db)
         "year INTEGER, "
         "mileage INTEGER NOT NULL DEFAULT 0 CHECK(mileage >= 0), "
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
-        "FOREIGN KEY(ownerUserId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(ownerUserId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_vehicles_owner ON vehicles(ownerUserId)");
 }
 
-static void ensureSymptomFormsSchema(SQLite::Database& db)
+static void ensureSymptomFormsSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS symptom_forms ("
@@ -67,13 +65,12 @@ static void ensureSymptomFormsSchema(SQLite::Database& db)
         "severity INTEGER NOT NULL CHECK(severity BETWEEN 1 AND 5), "
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE, "
-        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE CASCADE ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_symptom_forms_customer ON symptom_forms(customerId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_symptom_forms_vehicle ON symptom_forms(vehicleId)");
 }
 
-static void ensureMechanicsSchema(SQLite::Database& db)
+static void ensureMechanicsSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS mechanics ("
@@ -83,12 +80,11 @@ static void ensureMechanicsSchema(SQLite::Database& db)
         "shopName TEXT, "
         "hourlyRate REAL NOT NULL DEFAULT 0 CHECK(hourlyRate >= 0), "
         "specialties TEXT, "
-        "FOREIGN KEY(userId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(userId) REFERENCES customers(id) ON DELETE CASCADE ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_mechanics_user ON mechanics(userId)");
 }
 
-static void ensureMechanicAvailabilitySchema(SQLite::Database& db)
+static void ensureMechanicAvailabilitySchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS mechanic_availability ("
@@ -97,12 +93,11 @@ static void ensureMechanicAvailabilitySchema(SQLite::Database& db)
         "start TEXT NOT NULL, "
         "end TEXT NOT NULL, "
         "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE CASCADE ON UPDATE CASCADE, "
-        "UNIQUE(mechanicId, start, end))"
-    );
+        "UNIQUE(mechanicId, start, end))");
     db.exec("CREATE INDEX IF NOT EXISTS idx_mech_avail_mechanic_start_end ON mechanic_availability(mechanicId, start, end)");
 }
 
-static void ensureJobsSchema(SQLite::Database& db)
+static void ensureJobsSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS jobs ("
@@ -119,15 +114,14 @@ static void ensureJobsSchema(SQLite::Database& db)
         "FOREIGN KEY(appointmentId) REFERENCES appointments(id) ON DELETE CASCADE ON UPDATE CASCADE, "
         "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
-        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_mechanic ON jobs(mechanicId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_customer ON jobs(customerId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_vehicle ON jobs(vehicleId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_jobs_stage ON jobs(stage)");
 }
 
-static void ensureJobNotesSchema(SQLite::Database& db)
+static void ensureJobNotesSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS job_notes ("
@@ -136,12 +130,11 @@ static void ensureJobNotesSchema(SQLite::Database& db)
         "type TEXT NOT NULL DEFAULT 'update', "
         "text TEXT NOT NULL, "
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
-        "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_job_notes_job ON job_notes(jobId)");
 }
 
-static void ensureAppointmentsSchema(SQLite::Database& db)
+static void ensureAppointmentsSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS appointments ("
@@ -157,8 +150,7 @@ static void ensureAppointmentsSchema(SQLite::Database& db)
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
         "FOREIGN KEY(vehicleId) REFERENCES vehicles(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
-        "FOREIGN KEY(symptomFormId) REFERENCES symptom_forms(id) ON DELETE SET NULL ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(symptomFormId) REFERENCES symptom_forms(id) ON DELETE SET NULL ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customerId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_mechanic ON appointments(mechanicId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_vehicle ON appointments(vehicleId)");
@@ -166,7 +158,7 @@ static void ensureAppointmentsSchema(SQLite::Database& db)
     db.exec("CREATE INDEX IF NOT EXISTS idx_appointments_scheduled_at ON appointments(scheduledAt)");
 }
 
-static void ensureReviewsSchema(SQLite::Database& db)
+static void ensureReviewsSchema(SQLite::Database &db)
 {
     db.exec(
         "CREATE TABLE IF NOT EXISTS reviews ("
@@ -179,14 +171,13 @@ static void ensureReviewsSchema(SQLite::Database& db)
         "createdAt TEXT NOT NULL DEFAULT (datetime('now')), "
         "FOREIGN KEY(jobId) REFERENCES jobs(id) ON DELETE CASCADE ON UPDATE CASCADE, "
         "FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE RESTRICT ON UPDATE CASCADE, "
-        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE)"
-    );
+        "FOREIGN KEY(mechanicId) REFERENCES mechanics(id) ON DELETE RESTRICT ON UPDATE CASCADE)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_mechanic ON reviews(mechanicId)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customerId)");
 }
 
 // enable FK enforcement then create all tables
-static void ensureAllSchemas(SQLite::Database& db)
+static void ensureAllSchemas(SQLite::Database &db)
 {
     db.exec("PRAGMA foreign_keys = ON");
     ensureCustomersSchema(db);
@@ -362,21 +353,24 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
             if (!first)
                 sql += ", ";
             sql += "role = ?";
+            first = false;
         }
-        if(update.fullname.has_value())
+        if (update.fullname.has_value())
         {
             if (!first)
                 sql += ", ";
             sql += "name = ?";
+            first = false;
         }
-        if(update.phone.has_value())
+        if (update.phone.has_value())
         {
             if (!first)
                 sql += ", ";
             sql += "phone = ?";
+            first = false;
         }
         sql += " WHERE id = ?";
-        
+
         SQLite::Statement query(db, sql);
 
         int idx = 1;
@@ -384,11 +378,11 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
             query.bind(idx++, *update.email);
         if (update.role.has_value())
             query.bind(idx++, static_cast<int>(*update.role));
-        if(update.fullname.has_value())
+        if (update.fullname.has_value())
         {
             query.bind(idx++, *update.fullname);
         }
-        if(update.phone.has_value())
+        if (update.phone.has_value())
         {
             query.bind(idx++, *update.phone);
         }
@@ -408,54 +402,62 @@ bool DatabaseManager::updateUserRecord(UserId id, const UserUpdate &update)
 
 VehicleId DatabaseManager::createVehicle(UserId ownerUserId, const VehicleRecord &vehicle)
 {
-    if (ownerUserId <= 0) {
+    if (ownerUserId <= 0)
+    {
         throw std::invalid_argument("createVehicle: invalid ownerUserId");
     }
-    if (vehicle.vin.empty()) {
+    if (vehicle.vin.empty())
+    {
         throw std::invalid_argument("createVehicle: VIN is required");
     }
-    if (vehicle.model.empty()) {
+    if (vehicle.model.empty())
+    {
         throw std::invalid_argument("createVehicle: model is required");
     }
 
-    try {
+    try
+    {
         SQLite::Statement stmt(
             db,
             "INSERT INTO vehicles (ownerUserId, vin, make, model, year, mileage, createdAt) "
-            "VALUES (?, ?, ?, ?, ?, ?, datetime('now'))"
-        );
+            "VALUES (?, ?, ?, ?, ?, ?, datetime('now'))");
 
         stmt.bind(1, static_cast<int64_t>(ownerUserId));
         stmt.bind(2, vehicle.vin);
         stmt.bind(3, vehicle.make);
         stmt.bind(4, vehicle.model);
 
-        if (vehicle.year <= 0) stmt.bind(5);
-        else stmt.bind(5, vehicle.year);
+        if (vehicle.year <= 0)
+            stmt.bind(5);
+        else
+            stmt.bind(5, vehicle.year);
         stmt.bind(6, std::max(0, vehicle.mileage));
 
         stmt.exec();
         return static_cast<VehicleId>(db.getLastInsertRowid());
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("createVehicle failed: ") + e.what());
     }
 }
 
 std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId)
 {
-    if (vehicleId <= 0) return std::nullopt;
+    if (vehicleId <= 0)
+        return std::nullopt;
 
-    try {
+    try
+    {
         SQLite::Statement stmt(
             db,
             "SELECT id, ownerUserId, vin, make, model, year, mileage "
-            "FROM vehicles WHERE id = ?"
-        );
+            "FROM vehicles WHERE id = ?");
 
         stmt.bind(1, static_cast<int64_t>(vehicleId));
 
-        if (!stmt.executeStep()) {
+        if (!stmt.executeStep())
+        {
             return std::nullopt;
         }
 
@@ -470,7 +472,8 @@ std::optional<VehicleRecord> DatabaseManager::getVehicleById(VehicleId vehicleId
 
         return rec;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getVehicleById failed: ") + e.what());
     }
 }
@@ -479,18 +482,20 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
 {
     std::vector<VehicleRecord> results;
 
-    if (ownerUserId <= 0) return results;
+    if (ownerUserId <= 0)
+        return results;
 
-    try {
+    try
+    {
         SQLite::Statement stmt(
             db,
             "SELECT id, ownerUserId, vin, make, model, year, mileage "
-            "FROM vehicles WHERE ownerUserId = ?"
-        );
+            "FROM vehicles WHERE ownerUserId = ?");
 
         stmt.bind(1, static_cast<int64_t>(ownerUserId));
 
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             VehicleRecord rec{};
             rec.id = static_cast<VehicleId>(stmt.getColumn(0).getInt64());
             rec.ownerUserId = static_cast<UserId>(stmt.getColumn(1).getInt64());
@@ -505,64 +510,83 @@ std::vector<VehicleRecord> DatabaseManager::listVehiclesForUser(UserId ownerUser
 
         return results;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listVehiclesForUser failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::updateVehicle(VehicleId vehicleId, const VehicleUpdate &updates)
 {
-    if (vehicleId <= 0) return false;
+    if (vehicleId <= 0)
+        return false;
 
     std::vector<std::string> sets;
-    if (updates.vin.has_value())   sets.emplace_back("vin = ?");
-    if (updates.make.has_value())  sets.emplace_back("make = ?");
-    if (updates.model.has_value()) sets.emplace_back("model = ?");
-    if (updates.year.has_value())  sets.emplace_back("year = ?");
-    if (updates.mileage.has_value()) sets.emplace_back("mileage = ?");
+    if (updates.vin.has_value())
+        sets.emplace_back("vin = ?");
+    if (updates.make.has_value())
+        sets.emplace_back("make = ?");
+    if (updates.model.has_value())
+        sets.emplace_back("model = ?");
+    if (updates.year.has_value())
+        sets.emplace_back("year = ?");
+    if (updates.mileage.has_value())
+        sets.emplace_back("mileage = ?");
 
-    if (sets.empty()) return true; // nothing to update
+    if (sets.empty())
+        return true; // nothing to update
 
     std::string sql = "UPDATE vehicles SET ";
-    for (size_t i = 0; i < sets.size(); ++i) {
+    for (size_t i = 0; i < sets.size(); ++i)
+    {
         sql += sets[i];
-        if (i + 1 < sets.size()) sql += ", ";
+        if (i + 1 < sets.size())
+            sql += ", ";
     }
     sql += " WHERE id = ?";
 
-    try {
+    try
+    {
         SQLite::Statement stmt(db, sql);
 
         int idx = 1;
-        if (updates.vin.has_value())   stmt.bind(idx++, updates.vin.value());
-        if (updates.make.has_value())  stmt.bind(idx++, updates.make.value());
-        if (updates.model.has_value()) stmt.bind(idx++, updates.model.value());
-        if (updates.year.has_value())  stmt.bind(idx++, updates.year.value());
-        if (updates.mileage.has_value()) stmt.bind(idx++, updates.mileage.value());
+        if (updates.vin.has_value())
+            stmt.bind(idx++, updates.vin.value());
+        if (updates.make.has_value())
+            stmt.bind(idx++, updates.make.value());
+        if (updates.model.has_value())
+            stmt.bind(idx++, updates.model.value());
+        if (updates.year.has_value())
+            stmt.bind(idx++, updates.year.value());
+        if (updates.mileage.has_value())
+            stmt.bind(idx++, updates.mileage.value());
 
         stmt.bind(idx, static_cast<int64_t>(vehicleId));
 
         return stmt.exec() > 0;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("updateVehicle failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
 {
-    if (vehicleId <= 0) return false;
+    if (vehicleId <= 0)
+        return false;
 
-    try {
+    try
+    {
         SQLite::Statement stmt(
             db,
-            "DELETE FROM vehicles WHERE id = ?"
-        );
+            "DELETE FROM vehicles WHERE id = ?");
 
         stmt.bind(1, static_cast<int64_t>(vehicleId));
         return stmt.exec() > 0;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("deleteVehicle failed: ") + e.what());
     }
 }
@@ -571,18 +595,20 @@ bool DatabaseManager::deleteVehicle(VehicleId vehicleId)
 
 JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
 {
-    if (appointmentId <= 0) return -1;
+    if (appointmentId <= 0)
+        return -1;
 
-    try {
+    try
+    {
         ensureAppointmentsSchema(db);
         ensureJobsSchema(db);
 
         SQLite::Statement apptStmt(
             db,
-            "SELECT customerId, mechanicId, vehicleId FROM appointments WHERE id = ?"
-        );
+            "SELECT customerId, mechanicId, vehicleId FROM appointments WHERE id = ?");
         apptStmt.bind(1, static_cast<int64_t>(appointmentId));
-        if (!apptStmt.executeStep()) {
+        if (!apptStmt.executeStep())
+        {
             return -1;
         }
 
@@ -593,8 +619,7 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
         SQLite::Statement stmt(
             db,
             "INSERT INTO jobs (appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        );
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
         stmt.bind(1, static_cast<int64_t>(appointmentId));
         stmt.bind(2, static_cast<int64_t>(mechanicId));
@@ -613,27 +638,30 @@ JobId DatabaseManager::createJobFromAppointment(AppointmentId appointmentId)
 
         return jobId;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("createJobFromAppointment failed: ") + e.what());
     }
 }
 
 std::optional<JobRecord> DatabaseManager::getJobById(JobId jobId)
 {
-    if (jobId <= 0) return std::nullopt;
+    if (jobId <= 0)
+        return std::nullopt;
 
-    try {
+    try
+    {
         ensureJobsSchema(db);
 
         SQLite::Statement stmt(
             db,
             "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt, completedAt "
-            "FROM jobs WHERE id = ?"
-        );
+            "FROM jobs WHERE id = ?");
 
         stmt.bind(1, static_cast<int64_t>(jobId));
 
-        if (!stmt.executeStep()) {
+        if (!stmt.executeStep())
+        {
             return std::nullopt;
         }
 
@@ -651,7 +679,8 @@ std::optional<JobRecord> DatabaseManager::getJobById(JobId jobId)
 
         return rec;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getJobById failed: ") + e.what());
     }
 }
@@ -659,21 +688,23 @@ std::optional<JobRecord> DatabaseManager::getJobById(JobId jobId)
 std::vector<JobRecord> DatabaseManager::listOpenJobsForMechanic(MechanicId mechanicId)
 {
     std::vector<JobRecord> results;
-    if (mechanicId <= 0) return results;
+    if (mechanicId <= 0)
+        return results;
 
-    try {
+    try
+    {
         ensureJobsSchema(db);
 
         SQLite::Statement stmt(
             db,
             "SELECT id, appointmentId, mechanicId, customerId, vehicleId, stage, percentComplete, updatedAt, startedAt, completedAt "
-            "FROM jobs WHERE mechanicId = ? AND stage != ?"
-        );
+            "FROM jobs WHERE mechanicId = ? AND stage != ?");
 
         stmt.bind(1, static_cast<int64_t>(mechanicId));
         stmt.bind(2, static_cast<int>(JobStage::DONE));
 
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             JobRecord rec{};
             rec.id = static_cast<JobId>(stmt.getColumn(0).getInt64());
             rec.appointmentId = static_cast<AppointmentId>(stmt.getColumn(1).getInt64());
@@ -691,22 +722,24 @@ std::vector<JobRecord> DatabaseManager::listOpenJobsForMechanic(MechanicId mecha
 
         return results;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listOpenJobsForMechanic failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentComplete)
 {
-    if (jobId <= 0) return false;
+    if (jobId <= 0)
+        return false;
 
-    try {
+    try
+    {
         ensureJobsSchema(db);
 
         SQLite::Statement stmt(
             db,
-            "UPDATE jobs SET stage = ?, percentComplete = ?, updatedAt = ? WHERE id = ?"
-        );
+            "UPDATE jobs SET stage = ?, percentComplete = ?, updatedAt = ? WHERE id = ?");
 
         stmt.bind(1, static_cast<int>(stage));
         stmt.bind(2, percentComplete);
@@ -715,22 +748,24 @@ bool DatabaseManager::updateJobStage(JobId jobId, JobStage stage, int percentCom
 
         return stmt.exec() > 0;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("updateJobStage failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::markJobComplete(JobId jobId)
 {
-    if (jobId <= 0) return false;
+    if (jobId <= 0)
+        return false;
 
-    try {
+    try
+    {
         ensureJobsSchema(db);
 
         SQLite::Statement stmt(
             db,
-            "UPDATE jobs SET stage = ?, percentComplete = ?, completedAt = ?, updatedAt = ? WHERE id = ?"
-        );
+            "UPDATE jobs SET stage = ?, percentComplete = ?, completedAt = ?, updatedAt = ? WHERE id = ?");
 
         stmt.bind(1, static_cast<int>(JobStage::DONE));
         stmt.bind(2, 100);
@@ -740,7 +775,8 @@ bool DatabaseManager::markJobComplete(JobId jobId)
 
         return stmt.exec() > 0;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("markJobComplete failed: ") + e.what());
     }
 }
@@ -749,15 +785,16 @@ bool DatabaseManager::markJobComplete(JobId jobId)
 
 JobNoteId DatabaseManager::addJobNote(JobId jobId, const std::string &type, const std::string &text)
 {
-    if (jobId <= 0) return -1;
+    if (jobId <= 0)
+        return -1;
 
-    try {
+    try
+    {
         ensureJobNotesSchema(db);
 
         SQLite::Statement stmt(
             db,
-            "INSERT INTO job_notes (jobId, type, text, createdAt) VALUES (?, ?, ?, ?)"
-        );
+            "INSERT INTO job_notes (jobId, type, text, createdAt) VALUES (?, ?, ?, ?)");
 
         stmt.bind(1, static_cast<int64_t>(jobId));
         stmt.bind(2, type);
@@ -767,7 +804,8 @@ JobNoteId DatabaseManager::addJobNote(JobId jobId, const std::string &type, cons
         stmt.exec();
         return static_cast<JobNoteId>(db.getLastInsertRowid());
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("addJobNote failed: ") + e.what());
     }
 }
@@ -775,19 +813,21 @@ JobNoteId DatabaseManager::addJobNote(JobId jobId, const std::string &type, cons
 std::vector<JobNoteRecord> DatabaseManager::listJobNotes(JobId jobId)
 {
     std::vector<JobNoteRecord> results;
-    if (jobId <= 0) return results;
+    if (jobId <= 0)
+        return results;
 
-    try {
+    try
+    {
         ensureJobNotesSchema(db);
 
         SQLite::Statement stmt(
             db,
-            "SELECT id, jobId, type, text, createdAt FROM job_notes WHERE jobId = ? ORDER BY createdAt ASC, id ASC"
-        );
+            "SELECT id, jobId, type, text, createdAt FROM job_notes WHERE jobId = ? ORDER BY createdAt ASC, id ASC");
 
         stmt.bind(1, static_cast<int64_t>(jobId));
 
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             JobNoteRecord rec{};
             rec.id = static_cast<JobNoteId>(stmt.getColumn(0).getInt64());
             rec.jobId = static_cast<JobId>(stmt.getColumn(1).getInt64());
@@ -799,7 +839,8 @@ std::vector<JobNoteRecord> DatabaseManager::listJobNotes(JobId jobId)
 
         return results;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listJobNotes failed: ") + e.what());
     }
 }
@@ -808,20 +849,22 @@ std::vector<JobNoteRecord> DatabaseManager::listJobNotes(JobId jobId)
 
 std::optional<MechanicRecord> DatabaseManager::getMechanicByUserId(UserId userId)
 {
-    if (userId <= 0) return std::nullopt;
+    if (userId <= 0)
+        return std::nullopt;
 
-    try {
+    try
+    {
         ensureMechanicsSchema(db);
 
         SQLite::Statement stmt(
             db,
             "SELECT id, userId, displayName, shopName, hourlyRate, specialties "
-            "FROM mechanics WHERE userId = ?"
-        );
+            "FROM mechanics WHERE userId = ?");
 
         stmt.bind(1, static_cast<int64_t>(userId));
 
-        if (!stmt.executeStep()) {
+        if (!stmt.executeStep())
+        {
             return std::nullopt;
         }
 
@@ -832,18 +875,23 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByUserId(UserId userId
         rec.shopName = stmt.getColumn(3).isNull() ? "" : stmt.getColumn(3).getText();
         rec.hourlyRate = stmt.getColumn(4).isNull() ? 0.0 : stmt.getColumn(4).getDouble();
 
-        if (!stmt.getColumn(5).isNull()) {
-            try {
+        if (!stmt.getColumn(5).isNull())
+        {
+            try
+            {
                 auto parsed = json::parse(stmt.getColumn(5).getText());
                 rec.specialties = parsed.get<std::vector<std::string>>();
-            } catch (...) {
+            }
+            catch (...)
+            {
                 rec.specialties.clear();
             }
         }
 
         return rec;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getMechanicByUserId failed: ") + e.what());
     }
 }
@@ -852,26 +900,30 @@ std::vector<MechanicRecord> DatabaseManager::searchMechanics(const MechanicSearc
 {
     std::vector<MechanicRecord> results;
 
-    try {
+    try
+    {
         ensureMechanicsSchema(db);
 
         std::string sql =
             "SELECT id, userId, displayName, shopName, hourlyRate, specialties FROM mechanics";
 
         bool hasWhere = false;
-        if (filters.specialty.has_value()) {
+        if (filters.specialty.has_value())
+        {
             sql += " WHERE specialties LIKE ?";
             hasWhere = true;
         }
 
         SQLite::Statement stmt(db, sql);
 
-        if (filters.specialty.has_value()) {
+        if (filters.specialty.has_value())
+        {
             std::string pattern = "%" + filters.specialty.value() + "%";
             stmt.bind(1, pattern);
         }
 
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             MechanicRecord rec{};
             rec.id = static_cast<MechanicId>(stmt.getColumn(0).getInt64());
             rec.userId = static_cast<UserId>(stmt.getColumn(1).getInt64());
@@ -879,11 +931,15 @@ std::vector<MechanicRecord> DatabaseManager::searchMechanics(const MechanicSearc
             rec.shopName = stmt.getColumn(3).isNull() ? "" : stmt.getColumn(3).getText();
             rec.hourlyRate = stmt.getColumn(4).isNull() ? 0.0 : stmt.getColumn(4).getDouble();
 
-            if (!stmt.getColumn(5).isNull()) {
-                try {
+            if (!stmt.getColumn(5).isNull())
+            {
+                try
+                {
                     auto parsed = json::parse(stmt.getColumn(5).getText());
                     rec.specialties = parsed.get<std::vector<std::string>>();
-                } catch (...) {
+                }
+                catch (...)
+                {
                     rec.specialties.clear();
                 }
             }
@@ -893,41 +949,52 @@ std::vector<MechanicRecord> DatabaseManager::searchMechanics(const MechanicSearc
 
         return results;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("searchMechanics failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::updateMechanicProfile(MechanicId mechanicId, const MechanicUpdate &updates)
 {
-    if (mechanicId <= 0) return false;
+    if (mechanicId <= 0)
+        return false;
 
-    try {
+    try
+    {
         ensureMechanicsSchema(db);
 
         std::string sql = "UPDATE mechanics SET ";
         bool first = true;
 
-        if (updates.displayName.has_value()) {
+        if (updates.displayName.has_value())
+        {
             sql += "displayName = ?";
             first = false;
         }
-        if (updates.shopName.has_value()) {
-            if (!first) sql += ", ";
+        if (updates.shopName.has_value())
+        {
+            if (!first)
+                sql += ", ";
             sql += "shopName = ?";
             first = false;
         }
-        if (updates.hourlyRate.has_value()) {
-            if (!first) sql += ", ";
+        if (updates.hourlyRate.has_value())
+        {
+            if (!first)
+                sql += ", ";
             sql += "hourlyRate = ?";
             first = false;
         }
-        if (updates.specialties.has_value()) {
-            if (!first) sql += ", ";
+        if (updates.specialties.has_value())
+        {
+            if (!first)
+                sql += ", ";
             sql += "specialties = ?";
         }
 
-        if (first) {
+        if (first)
+        {
             return true; // nothing to update
         }
 
@@ -936,47 +1003,57 @@ bool DatabaseManager::updateMechanicProfile(MechanicId mechanicId, const Mechani
         SQLite::Statement stmt(db, sql);
 
         int idx = 1;
-        if (updates.displayName.has_value()) stmt.bind(idx++, updates.displayName.value());
-        if (updates.shopName.has_value()) stmt.bind(idx++, updates.shopName.value());
-        if (updates.hourlyRate.has_value()) stmt.bind(idx++, updates.hourlyRate.value());
-        if (updates.specialties.has_value()) {
+        if (updates.displayName.has_value())
+            stmt.bind(idx++, updates.displayName.value());
+        if (updates.shopName.has_value())
+            stmt.bind(idx++, updates.shopName.value());
+        if (updates.hourlyRate.has_value())
+            stmt.bind(idx++, updates.hourlyRate.value());
+        if (updates.specialties.has_value())
+        {
             stmt.bind(idx++, json(*updates.specialties).dump());
         }
         stmt.bind(idx, static_cast<int64_t>(mechanicId));
 
         int changed = stmt.exec();
-        if (changed > 0) return true;
+        if (changed > 0)
+            return true;
 
         // No row updated; insert a new row for this mechanicId/userId
         SQLite::Statement insert(
             db,
             "INSERT OR REPLACE INTO mechanics (id, userId, displayName, shopName, hourlyRate, specialties) "
-            "VALUES (?, ?, ?, ?, ?, ?)"
-        );
+            "VALUES (?, ?, ?, ?, ?, ?)");
 
         insert.bind(1, static_cast<int64_t>(mechanicId));
         insert.bind(2, static_cast<int64_t>(mechanicId));
         insert.bind(3, updates.displayName.value_or(""));
         insert.bind(4, updates.shopName.value_or(""));
         insert.bind(5, updates.hourlyRate.value_or(0.0));
-        if (updates.specialties.has_value()) {
+        if (updates.specialties.has_value())
+        {
             insert.bind(6, json(*updates.specialties).dump());
-        } else {
+        }
+        else
+        {
             insert.bind(6);
         }
 
         return insert.exec() > 0;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("updateMechanicProfile failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::setMechanicAvailability(MechanicId mechanicId, const std::vector<TimeSlot> &slots)
 {
-    if (mechanicId <= 0) return false;
+    if (mechanicId <= 0)
+        return false;
 
-    try {
+    try
+    {
         ensureMechanicAvailabilitySchema(db);
 
         db.exec("BEGIN TRANSACTION");
@@ -987,10 +1064,10 @@ bool DatabaseManager::setMechanicAvailability(MechanicId mechanicId, const std::
 
         SQLite::Statement insert(
             db,
-            "INSERT INTO mechanic_availability (mechanicId, start, end) VALUES (?, ?, ?)"
-        );
+            "INSERT INTO mechanic_availability (mechanicId, start, end) VALUES (?, ?, ?)");
 
-        for (const auto& slot : slots) {
+        for (const auto &slot : slots)
+        {
             insert.bind(1, static_cast<int64_t>(mechanicId));
             insert.bind(2, slot.start);
             insert.bind(3, slot.end);
@@ -1001,8 +1078,15 @@ bool DatabaseManager::setMechanicAvailability(MechanicId mechanicId, const std::
         db.exec("COMMIT");
         return true;
     }
-    catch (const SQLite::Exception& e) {
-        try { db.exec("ROLLBACK"); } catch (...) {}
+    catch (const SQLite::Exception &e)
+    {
+        try
+        {
+            db.exec("ROLLBACK");
+        }
+        catch (...)
+        {
+        }
         throw std::runtime_error(std::string("setMechanicAvailability failed: ") + e.what());
     }
 }
@@ -1010,25 +1094,30 @@ bool DatabaseManager::setMechanicAvailability(MechanicId mechanicId, const std::
 std::vector<TimeSlot> DatabaseManager::getMechanicAvailability(MechanicId mechanicId, const DateRange &range)
 {
     std::vector<TimeSlot> results;
-    if (mechanicId <= 0) return results;
+    if (mechanicId <= 0)
+        return results;
 
-    try {
+    try
+    {
         ensureMechanicAvailabilitySchema(db);
 
         std::string sql = "SELECT start, end FROM mechanic_availability WHERE mechanicId = ?";
         bool filter = !range.start.empty() && !range.end.empty();
-        if (filter) {
+        if (filter)
+        {
             sql += " AND start >= ? AND end <= ?";
         }
 
         SQLite::Statement stmt(db, sql);
         stmt.bind(1, static_cast<int64_t>(mechanicId));
-        if (filter) {
+        if (filter)
+        {
             stmt.bind(2, range.start);
             stmt.bind(3, range.end);
         }
 
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             TimeSlot slot;
             slot.start = stmt.getColumn(0).getText();
             slot.end = stmt.getColumn(1).getText();
@@ -1037,7 +1126,8 @@ std::vector<TimeSlot> DatabaseManager::getMechanicAvailability(MechanicId mechan
 
         return results;
     }
-    catch (const SQLite::Exception& e) {
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getMechanicAvailability failed: ") + e.what());
     }
 }
@@ -1046,22 +1136,31 @@ std::vector<TimeSlot> DatabaseManager::getMechanicAvailability(MechanicId mechan
 
 void DatabaseManager::beginTransaction()
 {
-    if (inTx_) return;
+    if (inTx_)
+        return;
     db.exec("BEGIN TRANSACTION");
     inTx_ = true;
 }
 
 void DatabaseManager::commit()
 {
-    if (!inTx_) return;
+    if (!inTx_)
+        return;
     db.exec("COMMIT");
     inTx_ = false;
 }
 
 void DatabaseManager::rollback()
 {
-    if (!inTx_) return;
-    try { db.exec("ROLLBACK"); } catch (...) {}
+    if (!inTx_)
+        return;
+    try
+    {
+        db.exec("ROLLBACK");
+    }
+    catch (...)
+    {
+    }
     inTx_ = false;
 }
 
@@ -1069,14 +1168,17 @@ void DatabaseManager::rollback()
 
 std::optional<AppointmentRecord> DatabaseManager::getAppointmentById(AppointmentId appointmentId)
 {
-    if (appointmentId <= 0) return std::nullopt;
-    try {
+    if (appointmentId <= 0)
+        return std::nullopt;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
-            "scheduledAt, status, note, createdAt FROM appointments WHERE id = ?");
+                               "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+                               "scheduledAt, status, note, createdAt FROM appointments WHERE id = ?");
         stmt.bind(1, static_cast<int64_t>(appointmentId));
-        if (stmt.executeStep()) {
+        if (stmt.executeStep())
+        {
             AppointmentRecord r;
             r.appointmentId = stmt.getColumn(0).getInt64();
             r.appointmentId = r.appointmentId;
@@ -1091,7 +1193,9 @@ std::optional<AppointmentRecord> DatabaseManager::getAppointmentById(Appointment
             return r;
         }
         return std::nullopt;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getAppointmentById failed: ") + e.what());
     }
 }
@@ -1099,14 +1203,17 @@ std::optional<AppointmentRecord> DatabaseManager::getAppointmentById(Appointment
 std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(MechanicId mechanicId)
 {
     std::vector<AppointmentRecord> results;
-    if (mechanicId <= 0) return results;
-    try {
+    if (mechanicId <= 0)
+        return results;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
-            "scheduledAt, status, note, createdAt FROM appointments WHERE mechanicId = ?");
+                               "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+                               "scheduledAt, status, note, createdAt FROM appointments WHERE mechanicId = ?");
         stmt.bind(1, static_cast<int64_t>(mechanicId));
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             AppointmentRecord r;
             r.appointmentId = stmt.getColumn(0).getInt64();
             r.appointmentId = r.appointmentId;
@@ -1121,21 +1228,27 @@ std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(Mech
             results.push_back(std::move(r));
         }
         return results;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listAppointmentsForMechanic failed: ") + e.what());
     }
 }
 
-std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForCustomer(UserId customerId) {
+std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForCustomer(UserId customerId)
+{
     std::vector<AppointmentRecord> results;
-    if (customerId <= 0) return results;
-    try {
+    if (customerId <= 0)
+        return results;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
-            "scheduledAt, status, note, createdAt FROM appointments WHERE customerId = ?");
+                               "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+                               "scheduledAt, status, note, createdAt FROM appointments WHERE customerId = ?");
         stmt.bind(1, static_cast<int64_t>(customerId));
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             AppointmentRecord r;
             r.appointmentId = stmt.getColumn(0).getInt64();
             r.customerId = stmt.getColumn(1).getInt64();
@@ -1149,107 +1262,129 @@ std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForCustomer(User
             results.push_back(std::move(r));
         }
         return results;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listAppointmentsForCustomer failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
 {
-    if (appointmentId <= 0) return false;
-    try {
+    if (appointmentId <= 0)
+        return false;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "UPDATE appointments SET status = ? WHERE id = ?");
+                               "UPDATE appointments SET status = ? WHERE id = ?");
         stmt.bind(1, static_cast<int>(status));
         stmt.bind(2, static_cast<int64_t>(appointmentId));
         return stmt.exec() > 0;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("updateAppointmentStatus failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::updateAppointmentScheduledAt(AppointmentId appointmentId, const std::string &newScheduledAt)
 {
-    if (appointmentId <= 0) return false;
-    try {
+    if (appointmentId <= 0)
+        return false;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "UPDATE appointments SET scheduledAt = ? WHERE id = ?");
+                               "UPDATE appointments SET scheduledAt = ? WHERE id = ?");
         stmt.bind(1, newScheduledAt);
         stmt.bind(2, static_cast<int64_t>(appointmentId));
         return stmt.exec() > 0;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("updateAppointmentScheduledAt failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::rescheduleAppointment(AppointmentId appointmentId, const std::string &newScheduledAt, const std::string &note)
 {
-    if (appointmentId <= 0) return false;
-    try {
+    if (appointmentId <= 0)
+        return false;
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "UPDATE appointments SET scheduledAt = ?, note = ?, status = ? WHERE id = ?");
+                               "UPDATE appointments SET scheduledAt = ?, note = ?, status = ? WHERE id = ?");
         stmt.bind(1, newScheduledAt);
         stmt.bind(2, note);
         stmt.bind(3, static_cast<int>(AppointmentStatus::REQUESTED));
         stmt.bind(4, static_cast<int64_t>(appointmentId));
         return stmt.exec() > 0;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("rescheduleAppointment failed: ") + e.what());
     }
 }
 
 bool DatabaseManager::cancelAppointment(AppointmentId appointmentId, const std::string &reason)
 {
-    if (appointmentId <= 0) return false;
-    try {
+    if (appointmentId <= 0)
+        return false;
+    try
+    {
         SQLite::Statement stmt(db,
-            "UPDATE appointments SET status = ?, note = ? WHERE id = ?");
+                               "UPDATE appointments SET status = ?, note = ? WHERE id = ?");
         stmt.bind(1, static_cast<int>(AppointmentStatus::CANCELLED));
         stmt.bind(2, reason);
         stmt.bind(3, static_cast<int64_t>(appointmentId));
         return stmt.exec() > 0;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("cancelAppointment failed: ") + e.what());
     }
 }
 
 // ==================== Symptom Forms (lookup) ====================
 
+SymptomFormRecord DatabaseManager::getSymptomFormById(SymptomFormId formId)
+{
+    if (formId <= 0)
+        throw std::invalid_argument("getSymptomFormById: invalid formId");
 
-SymptomFormRecord DatabaseManager::getSymptomFormById(SymptomFormId formId){
-    if(formId <=0) throw std::invalid_argument("getSymptomFormById: invalid formId");
-
-    try{
+    try
+    {
         ensureSymptomFormsSchema(db);
         SQLite::Statement stmt(db,
-            "SELECT * FROM symptom_forms WHERE id = ?");
-            stmt.bind(1, static_cast<int64_t>(formId));
-            if(stmt.executeStep()){
-                SymptomFormRecord r;
-                r.id = stmt.getColumn(0).getInt64();
-                r.customerId = stmt.getColumn(1).getInt64();
-                r.vehicleId = stmt.getColumn(2).getInt64();
-                r.description = stmt.getColumn(3).getText();
-                r.severity = stmt.getColumn(4).getInt();
-                r.createdAt = stmt.getColumn(5).getText();
-                return r;
-            }
+                               "SELECT * FROM symptom_forms WHERE id = ?");
+        stmt.bind(1, static_cast<int64_t>(formId));
+        if (stmt.executeStep())
+        {
+            SymptomFormRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.customerId = stmt.getColumn(1).getInt64();
+            r.vehicleId = stmt.getColumn(2).getInt64();
+            r.description = stmt.getColumn(3).getText();
+            r.severity = stmt.getColumn(4).getInt();
+            r.createdAt = stmt.getColumn(5).getText();
+            return r;
+        }
     }
-    catch(const SQLite::Exception &e){
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("getSymptomFormById failed: ") + e.what());
     }
     throw std::runtime_error("getSymptomFormById: form not found");
 }
 
-SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form){
+SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form)
+{
     ensureSymptomFormsSchema(db);
     SQLite::Statement stmt(
         db,
-        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity, createdAt) VALUES (?, ?, ?, ?, ?)"
-    );
+        "INSERT INTO symptom_forms (customerId, vehicleId, description, severity, createdAt) VALUES (?, ?, ?, ?, ?)");
     stmt.bind(1, form.customerId);
     stmt.bind(2, form.vehicleId);
     stmt.bind(3, form.description);
@@ -1258,48 +1393,64 @@ SymptomFormId DatabaseManager::createSymptomForm(const SymptomFormRecord &form){
     stmt.exec();
     return db.getLastInsertRowid();
 }
-std::vector<SymptomFormRecord> DatabaseManager::listSymptomFormsForCustomer(UserId customerId){
+std::vector<SymptomFormRecord> DatabaseManager::listSymptomFormsForCustomer(UserId customerId)
+{
     std::vector<SymptomFormRecord> result;
     SQLite::Statement stmt(db,
-        "SELECT * FROM symptom_forms WHERE customerId = ?");
-        stmt.bind(1, static_cast<int64_t>(customerId));
-        while(stmt.executeStep()){
-            SymptomFormRecord r;
-            r.id = stmt.getColumn(0).getInt64();
-            r.customerId = stmt.getColumn(1).getInt64();
-            r.vehicleId = stmt.getColumn(2).getInt64();
-            r.description = stmt.getColumn(3).getText();
-            r.severity = stmt.getColumn(4).getInt();
-            r.createdAt = stmt.getColumn(5).getText();
-            result.push_back(std::move(r));
-        }
+                           "SELECT * FROM symptom_forms WHERE customerId = ?");
+    stmt.bind(1, static_cast<int64_t>(customerId));
+    while (stmt.executeStep())
+    {
+        SymptomFormRecord r;
+        r.id = stmt.getColumn(0).getInt64();
+        r.customerId = stmt.getColumn(1).getInt64();
+        r.vehicleId = stmt.getColumn(2).getInt64();
+        r.description = stmt.getColumn(3).getText();
+        r.severity = stmt.getColumn(4).getInt();
+        r.createdAt = stmt.getColumn(5).getText();
+        result.push_back(std::move(r));
+    }
     return result;
 }
-bool DatabaseManager::updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates){
+bool DatabaseManager::updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates)
+{
     std::string sql = "UPDATE symptom_forms SET";
-    if(updates.description.has_value()) sql += " description = ?";
-    if(updates.severity.has_value()) sql += " severity = ?";
+    bool first = true;
+    if (updates.description.has_value())
+    {
+        sql += " description = ?";
+        first = false;
+    }
+    if (updates.severity.has_value())
+    {
+        if (!first)
+            sql += ",";
+        sql += " severity = ?";
+    }
     sql += " WHERE id = ?";
     SQLite::Statement stmt(db, sql);
     int idx = 1;
-    if(updates.description.has_value()) stmt.bind(idx++, updates.description.value());
-    if(updates.severity.has_value()) stmt.bind(idx++, updates.severity.value());
+    if (updates.description.has_value())
+        stmt.bind(idx++, updates.description.value());
+    if (updates.severity.has_value())
+        stmt.bind(idx++, updates.severity.value());
     stmt.bind(idx, static_cast<int64_t>(formId));
     return stmt.exec() > 0;
-
 }
-bool DatabaseManager::deleteSymptomForm(SymptomFormId formId){
+bool DatabaseManager::deleteSymptomForm(SymptomFormId formId)
+{
     SQLite::Statement stmt(db,
-        "DELETE FROM symptom_forms WHERE id = ?");
-        stmt.bind(1, static_cast<int64_t>(formId));
-        return stmt.exec() > 0;
+                           "DELETE FROM symptom_forms WHERE id = ?");
+    stmt.bind(1, static_cast<int64_t>(formId));
+    return stmt.exec() > 0;
 }
 
 // ==================== Reviews ====================
 
-ReviewId DatabaseManager::createReview(const ReviewRecord &review){
+ReviewId DatabaseManager::createReview(const ReviewRecord &review)
+{
     SQLite::Statement stmt{db,
-        "INSERT INTO reviews(jobId, customerId, mechanicId, rating, comment, createdAt) VALUES (?, ?, ?, ?, ?, ?)"};
+                           "INSERT INTO reviews(jobId, customerId, mechanicId, rating, comment, createdAt) VALUES (?, ?, ?, ?, ?, ?)"};
     stmt.bind(1, static_cast<int64_t>(review.jobId));
     stmt.bind(2, static_cast<int64_t>(review.customerId));
     stmt.bind(3, static_cast<int64_t>(review.mechanicId));
@@ -1309,25 +1460,29 @@ ReviewId DatabaseManager::createReview(const ReviewRecord &review){
     stmt.exec();
     return static_cast<ReviewId>(db.getLastInsertRowid());
 }
-std::vector<ReviewRecord> DatabaseManager::listReviewsForCustomer(UserId id){
+std::vector<ReviewRecord> DatabaseManager::listReviewsForCustomer(UserId id)
+{
     std::vector<ReviewRecord> results;
-    try{
+    try
+    {
         SQLite::Statement stmt(db,
-            "SELECT * FROM reviews WHERE customerId = ?");
-            stmt.bind(1, static_cast<int64_t>(id));
-            while(stmt.executeStep()){
-                ReviewRecord r;
-                r.id = stmt.getColumn(0).getInt64();
-                r.jobId = stmt.getColumn(1).getInt64();
-                r.customerId = stmt.getColumn(2).getInt64();
-                r.mechanicId = stmt.getColumn(3).getInt64();
-                r.rating = stmt.getColumn(4).getInt();
-                r.comment = stmt.getColumn(5).getText();
-                r.createdAt = stmt.getColumn(6).getText();
-                results.push_back(std::move(r));
-            }
+                               "SELECT * FROM reviews WHERE customerId = ?");
+        stmt.bind(1, static_cast<int64_t>(id));
+        while (stmt.executeStep())
+        {
+            ReviewRecord r;
+            r.id = stmt.getColumn(0).getInt64();
+            r.jobId = stmt.getColumn(1).getInt64();
+            r.customerId = stmt.getColumn(2).getInt64();
+            r.mechanicId = stmt.getColumn(3).getInt64();
+            r.rating = stmt.getColumn(4).getInt();
+            r.comment = stmt.getColumn(5).getText();
+            r.createdAt = stmt.getColumn(6).getText();
+            results.push_back(std::move(r));
+        }
     }
-    catch(const SQLite::Exception &e){
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listReviewsForCustomer failed: ") + e.what());
     }
     return results;
@@ -1335,14 +1490,17 @@ std::vector<ReviewRecord> DatabaseManager::listReviewsForCustomer(UserId id){
 std::vector<ReviewRecord> DatabaseManager::listReviewsForMechanic(MechanicId mechanicId)
 {
     std::vector<ReviewRecord> results;
-    if (mechanicId <= 0) return results;
-    try {
+    if (mechanicId <= 0)
+        return results;
+    try
+    {
         ensureReviewsSchema(db);
         SQLite::Statement stmt(db,
-            "SELECT id, jobId, customerId, mechanicId, rating, comment, createdAt "
-            "FROM reviews WHERE mechanicId = ?");
+                               "SELECT id, jobId, customerId, mechanicId, rating, comment, createdAt "
+                               "FROM reviews WHERE mechanicId = ?");
         stmt.bind(1, static_cast<int64_t>(mechanicId));
-        while (stmt.executeStep()) {
+        while (stmt.executeStep())
+        {
             ReviewRecord r;
             r.id = stmt.getColumn(0).getInt64();
             r.jobId = stmt.getColumn(1).getInt64();
@@ -1354,16 +1512,18 @@ std::vector<ReviewRecord> DatabaseManager::listReviewsForMechanic(MechanicId mec
             results.push_back(std::move(r));
         }
         return results;
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("listReviewsForMechanic failed: ") + e.what());
     }
 }
-bool DatabaseManager::deleteReview(ReviewId reviewId){
+bool DatabaseManager::deleteReview(ReviewId reviewId)
+{
     SQLite::Statement stmt(db,
-        "DELETE FROM reviews WHERE id=?"
-    );
-    stmt.bind(1,static_cast<int64_t>(reviewId));
-    return stmt.exec()>0;
+                           "DELETE FROM reviews WHERE id=?");
+    stmt.bind(1, static_cast<int64_t>(reviewId));
+    return stmt.exec() > 0;
 }
 
 // ==================== Convenience wrappers ====================
@@ -1495,12 +1655,14 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByEmail(const std::str
         return std::nullopt;
     return getMechanicByUserId(userOpt->id);
 }
-  AppointmentId DatabaseManager::createAppointment(const AppointmentRecord &req){
-    try {
+AppointmentId DatabaseManager::createAppointment(const AppointmentRecord &req)
+{
+    try
+    {
         ensureAppointmentsSchema(db);
         SQLite::Statement stmt(db,
-            "INSERT INTO appointments (customerId, mechanicId, vehicleId, symptomFormId, scheduledAt, status, note, createdAt) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                               "INSERT INTO appointments (customerId, mechanicId, vehicleId, symptomFormId, scheduledAt, status, note, createdAt) "
+                               "VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
         stmt.bind(1, static_cast<int64_t>(req.customerId));
         stmt.bind(2, static_cast<int64_t>(req.mechanicId));
         stmt.bind(3, static_cast<int64_t>(req.vehicleId));
@@ -1510,7 +1672,9 @@ std::optional<MechanicRecord> DatabaseManager::getMechanicByEmail(const std::str
         stmt.bind(7, req.note);
         stmt.exec();
         return static_cast<AppointmentId>(db.getLastInsertRowid());
-    } catch (const SQLite::Exception &e) {
+    }
+    catch (const SQLite::Exception &e)
+    {
         throw std::runtime_error(std::string("createAppointment failed: ") + e.what());
     }
-  }
+}

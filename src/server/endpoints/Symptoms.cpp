@@ -91,7 +91,7 @@ SymptomsHandler::updateForm(SymptomFormId formId, const http::request<http::stri
                                      "Invalid JSON body", ver, ka);
 
   SymptomFormUpdate formUpdate = body.get<SymptomFormUpdate>();
-
+  // TODO: switch from SymptomFormUpdate to SymptomFormUpdateDTO once the former is implemented in CustomerService
   struct Result
   {
     bool success{false};
