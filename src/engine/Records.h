@@ -1,3 +1,9 @@
+/**
+ * @file Records.h
+ * @brief Database record structs, ID type aliases, enums, and update payloads.
+ *
+ * These types map directly to DB rows. DTOs for the HTTP layer live in DTO.h.
+ */
 #pragma once
 
 #include <string>
@@ -6,53 +12,60 @@
 #include <cstdint>
 
 // ----------- ID Types -----------
-using UserId = int64_t;
-using VehicleId = int64_t;
-using SymptomFormId = int64_t;
-using MechanicId = int64_t;
-using AppointmentId = int64_t;
-using JobId = int64_t;
-using JobNoteId = int64_t;
-using ReviewId = int64_t;
+using UserId = int64_t;        ///< unique user identifier
+using VehicleId = int64_t;     ///< unique vehicle identifier
+using SymptomFormId = int64_t; ///< unique symptom form identifier
+using MechanicId = int64_t;    ///< unique mechanic identifier
+using AppointmentId = int64_t; ///< unique appointment identifier
+using JobId = int64_t;         ///< unique job identifier
+using JobNoteId = int64_t;     ///< unique job note identifier
+using ReviewId = int64_t;      ///< unique review identifier
 
 // ----------- Enums -----------
+
+/// @brief User account role.
 enum class UserRole {
-    CUSTOMER,
-    MECHANIC
+    CUSTOMER,  ///< regular customer
+    MECHANIC   ///< mechanic / shop owner
 };
 
+/// @brief Lifecycle states for an appointment.
 enum class AppointmentStatus {
-    REQUESTED,
-    CONFIRMED,
-    SCHEDULED,
-    IN_PROGRESS,
-    CANCELLED,
-    COMPLETED
+    REQUESTED,   ///< customer submitted request
+    CONFIRMED,   ///< mechanic accepted
+    SCHEDULED,   ///< date/time locked in
+    IN_PROGRESS, ///< work underway
+    CANCELLED,   ///< either party cancelled
+    COMPLETED    ///< job finished
 };
 
+/// @brief Stages a job progresses through.
 enum class JobStage {
-    RECEIVED,
-    DIAGNOSTICS,
-    PARTS,
-    REPAIR,
-    QA,
-    DONE
+    RECEIVED,    ///< vehicle received at shop
+    DIAGNOSTICS, ///< running diagnostics
+    PARTS,       ///< waiting on / ordering parts
+    REPAIR,      ///< active repair work
+    QA,          ///< quality assurance check
+    DONE         ///< work complete
 };
 
 // ----------- Shared time structs (DB + services can reuse) -----------
+
+/// @brief A time window with start and end ISO datetimes.
 struct TimeSlot {
-    std::string start; // ISO datetime
-    std::string end;   // ISO datetime
+    std::string start; ///< ISO datetime start
+    std::string end;   ///< ISO datetime end
 };
 
+/// @brief A date range filter for queries.
 struct DateRange {
-    std::string start; // ISO datetime
-    std::string end;   // ISO datetime
+    std::string start; ///< ISO datetime start
+    std::string end;   ///< ISO datetime end
 };
 
 // ----------- DB Records + Updates -----------
 
-// User
+/// @brief Row from the users table.
 struct UserRecord {
     UserId id{};
     std::string name;
@@ -63,6 +76,7 @@ struct UserRecord {
     std::string phone;
 };
 
+/// @brief Partial update payload for a user record.
 struct UserUpdate {
     std::optional<std::string> fullname;
     std::optional<std::string> email;
@@ -70,7 +84,7 @@ struct UserUpdate {
     std::optional<UserRole> role;
 };
 
-// Vehicle
+/// @brief Row from the vehicles table.
 struct VehicleRecord {
     VehicleId id{};
     UserId ownerUserId{};
@@ -81,6 +95,7 @@ struct VehicleRecord {
     int mileage{ 0 };
 };
 
+/// @brief Partial update payload for a vehicle.
 struct VehicleUpdate {
     std::optional<std::string> vin;
     std::optional<std::string> make;
@@ -90,7 +105,7 @@ struct VehicleUpdate {
     UserId customerId{};
 };
 
-// Symptom Form
+/// @brief Row from the symptom_forms table.
 struct SymptomFormRecord {
     SymptomFormId id{};
     UserId customerId{};
@@ -100,12 +115,13 @@ struct SymptomFormRecord {
     std::string createdAt;
 };
 
+/// @brief Partial update payload for a symptom form.
 struct SymptomFormUpdate {
     std::optional<std::string> description;
     std::optional<int> severity;
 };
 
-// Mechanic
+/// @brief Row from the mechanics table.
 struct MechanicRecord {
     MechanicId id{};
     UserId userId{};
@@ -115,6 +131,7 @@ struct MechanicRecord {
     std::vector<std::string> specialties; // tags like "BRAKES", "ENGINE"
 };
 
+/// @brief Partial update payload for a mechanic profile.
 struct MechanicUpdate {
     std::optional<std::string> displayName;
     std::optional<std::string> shopName;
@@ -122,7 +139,7 @@ struct MechanicUpdate {
     std::optional<std::vector<std::string>> specialties;
 };
 
-// Appointment
+/// @brief Row from the appointments table.
 struct AppointmentRecord {
     UserId customerId{};
     MechanicId mechanicId{};
@@ -136,7 +153,7 @@ struct AppointmentRecord {
     SymptomFormId symptomFormId;
 };
 
-// Job
+/// @brief Row from the jobs table.
 struct JobRecord {
     JobId id{};
     AppointmentId appointmentId{};
@@ -150,7 +167,7 @@ struct JobRecord {
     std::string completedAt;
 };
 
-// Job Note (one entry in the per-job log)
+/// @brief Single entry in a job's activity log.
 struct JobNoteRecord {
     JobNoteId id{};
     JobId jobId{};
@@ -159,7 +176,7 @@ struct JobNoteRecord {
     std::string createdAt; // ISO datetime
 };
 
-// Review
+/// @brief Row from the reviews table.
 struct ReviewRecord {
     ReviewId id{};
     JobId jobId{};
@@ -170,7 +187,7 @@ struct ReviewRecord {
     std::string createdAt; // ISO datetime
 };
 
-// ----------- Filters (DB query inputs) -----------
+/// @brief Filter criteria for mechanic search queries.
 struct MechanicSearchFilter {
     std::optional<std::string> specialty;
     std::optional<double> maxDistanceKm; // can be stubbed in MVP

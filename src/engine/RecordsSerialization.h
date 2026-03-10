@@ -1,3 +1,9 @@
+/**
+ * @file RecordsSerialization.h
+ * @brief nlohmann::json to_json / from_json overloads for Record structs and enums.
+ *
+ * Enum values are serialized as human-readable strings (e.g. "CUSTOMER", "MECHANIC").
+ */
 #pragma once
 
 #include "Records.h"

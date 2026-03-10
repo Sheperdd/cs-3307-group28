@@ -1,5 +1,8 @@
-  // Created by svkol on 2026-02-28.
-//
+/**
+ * @file MainWindow.h
+ * @brief Top-level window — owns a QStackedWidget that switches between
+ *        LandingPage, SignUpPage, LoginPage, and PasswordResetPage.
+ */
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H

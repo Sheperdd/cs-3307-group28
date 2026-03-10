@@ -1,3 +1,9 @@
+/**
+ * @file DTOSerialization.h
+ * @brief nlohmann::json to_json / from_json overloads for all DTOs.
+ *
+ * Auto-wires DTO structs to JSON for HTTP request/response serialization.
+ */
 #pragma once
 
 #include "DTO.h"

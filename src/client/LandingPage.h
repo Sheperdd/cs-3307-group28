@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-02-28.
-//
+/**
+ * @file LandingPage.h
+ * @brief Initial screen with Log In / Sign Up buttons.
+ */
 
 #ifndef LANDINGPAGE_H
 #define LANDINGPAGE_H

@@ -1,3 +1,7 @@
+/**
+ * @file Jobs.cpp
+ * @brief Job endpoint implementation — get, stage update, complete, notes.
+ */
 #include "Jobs.h"
 
 net::awaitable<http::response<http::string_body>>

@@ -1,3 +1,8 @@
+/**
+ * @file ProfitabilityEngine.cpp
+ * @brief Implementation of ProfitabilityEngine — cost estimation and
+ *        profitability calculations.
+ */
 #include "ProfitabilityEngine.h"
 
 ProfitabilityEngine::ProfitabilityEngine(DatabaseManager& db, int defaultHourlyRate, double taxRate)

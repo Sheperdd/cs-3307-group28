@@ -1,3 +1,8 @@
+/**
+ * @file HttpSession.cpp
+ * @brief HTTP session loop, handler registration, auth middleware, and
+ *        request routing.
+ */
 #include "HttpSession.h"
 #include "http_utils.h"
 #include "JwtManager.h"
@@ -63,7 +68,7 @@ HttpSession::route_request(const http::request<http::string_body> &req)
         co_return http_utils::make_error(http::status::not_found,
                                          "Not found", req.version(), req.keep_alive());
 
-    // ── Auth middleware ──────────────────────────────────────────────
+    // ── Auth middleware — skip token check for public routes ─────────
     bool isPublic = false;
 
     // All /auth/* routes are public (register, login, logout)
@@ -99,7 +104,8 @@ HttpSession::route_request(const http::request<http::string_body> &req)
 
 net::awaitable<void> HttpSession::run()
 {
-    auto self = shared_from_this(); // prevent destruction while coroutine is active
+    // extend session lifetime via shared_ptr prevent destruction while coroutine is active
+    auto self = shared_from_this();
     try
     {
         for (;;)

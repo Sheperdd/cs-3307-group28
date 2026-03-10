@@ -1,3 +1,7 @@
+/**
+ * @file Symptoms.cpp
+ * @brief Symptom-form endpoint implementation — get, update, delete.
+ */
 #include "Symptoms.h"
 
 net::awaitable<http::response<http::string_body>>

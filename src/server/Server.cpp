@@ -1,3 +1,8 @@
+/**
+ * @file Server.cpp
+ * @brief Server construction (binds acceptor, wires services) and the
+ *        accept-loop coroutine.
+ */
 #include "Server.h"
 #include "HttpSession.h"
 
@@ -9,7 +14,7 @@
 
 Server::Server(net::io_context &io_context, short port)
     : ratingEngine_(db_, 30)                                              // 30-day half-life
-    , profitabilityEngine_(db_, 80, 0.13)                                 // $80/hr default, 13 % tax
+    , profitabilityEngine_(db_, 80, 0.13)                                 // $80/hr default, 13% tax
     , customerService_(&db_, ratingEngine_, profitabilityEngine_, validator_)
     , mechanicService_(db_)
     , authService_(db_)

@@ -1,3 +1,7 @@
+/**
+ * @file LandingPage.cpp
+ * @brief LandingPage layout and button signal wiring.
+ */
 #include "LandingPage.h"
 
 #include <QVBoxLayout>

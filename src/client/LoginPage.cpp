@@ -1,3 +1,7 @@
+/**
+ * @file LoginPage.cpp
+ * @brief LoginPage layout, form wiring, and error display.
+ */
 #include "LoginPage.h"
 
 #include <QVBoxLayout>

@@ -1,3 +1,8 @@
+/**
+ * @file JwtManager.h
+ * @brief Stateless JWT helpers — token generation, verification, and
+ *        secret management via environment variable.
+ */
 #pragma once
 
 #include "AuthInfo.h"

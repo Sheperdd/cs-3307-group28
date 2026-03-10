@@ -1,3 +1,7 @@
+/**
+ * @file Reviews.cpp
+ * @brief Review endpoint implementation — create and delete.
+ */
 #include "Reviews.h"
 
 net::awaitable<http::response<http::string_body>>

@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-03-05.
-//
+/**
+ * @file HomePage.h
+ * @brief Post-login home screen with navigation buttons.
+ */
 
 #ifndef HOMEPAGE_H
 #define HOMEPAGE_H

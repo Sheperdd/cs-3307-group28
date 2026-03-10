@@ -1,6 +1,8 @@
-//
-// Created by svkol on 2026-02-13.
-//
+/**
+ * @file MechanicService.cpp
+ * @brief Implementation of MechanicService — mechanic profiles, appointment
+ *        handling, job lifecycle, notes, and reviews.
+ */
 
 #include "MechanicService.h"
 #include <stdexcept>
@@ -22,6 +24,7 @@ MechanicId MechanicService::createMechanicProfile(UserId userId, const MechanicC
         throw std::runtime_error("User if not a mechanic");
     }
 
+    // check existing profile to avoid duplicates
     auto existing = db.getMechanicByUserId(userId);
     if (existing.has_value()){
         throw std::runtime_error("Mechanic profile has already been created");
@@ -54,6 +57,7 @@ MechanicDTO MechanicService::getMechanicProfile(MechanicId mechanicId){
 
     auto reviews = db.listReviewsForMechanic(mechanicId);
 
+    // compute average rating from all reviews
     double avgRating = 0.0;
     if (!reviews.empty()){
         int totalRating = 0;
@@ -124,6 +128,7 @@ std::vector<AppointmentDTO> MechanicService::listIncomingRequests(MechanicId mec
     // Get all appointments for this mechanic with "pending" status
     auto appointments = db.listAppointmentsForMechanic(mechanicId);
 
+    // only include appointments still in REQUESTED state
     std::vector<AppointmentDTO> requests;
     for (const auto& appt : appointments) {
         if (appt.status == AppointmentStatus::REQUESTED) {
@@ -313,8 +318,10 @@ JobId MechanicService::startJobFromAppointment(MechanicId mechanicId, Appointmen
     db.beginTransaction();
 
     try{
+        // create job row from appointment data
         JobId jobid= db.createJobFromAppointment(appointmentId);
 
+        // transition appointment to SCHEDULED
         db.updateAppointmentStatus(appointmentId, AppointmentStatus::SCHEDULED);
 
         auto stages = buildDefaultStages();;

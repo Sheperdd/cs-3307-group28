@@ -1,3 +1,7 @@
+/**
+ * @file EndpointHandler.h
+ * @brief Abstract base for all REST endpoint handlers.
+ */
 #pragma once
 
 #include <boost/asio.hpp>
@@ -18,6 +22,8 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
+/// @brief Pure-virtual interface for endpoint handlers.
+///        Each subclass owns one URL prefix (e.g. "users", "jobs").
 class EndpointHandler
 {
 public:

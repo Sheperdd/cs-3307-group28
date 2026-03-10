@@ -1,3 +1,9 @@
+/**
+ * @file DatabaseManager.cpp
+ * @brief SQLite database implementation — schema creation, CRUD for all
+ *        entities (users, vehicles, symptom forms, mechanics, appointments,
+ *        jobs, job notes, reviews).
+ */
 #include "DatabaseManager.h"
 #include <nlohmann/json.hpp>
 #include <iostream>
@@ -8,7 +14,7 @@
 
 using json = nlohmann::json;
 
-// Generates current date and time as ISO string
+// generates current UTC timestamp as ISO string
 static std::string nowISO()
 {
     std::time_t t = std::time(nullptr);
@@ -18,7 +24,7 @@ static std::string nowISO()
     return std::string(buffer);
 }
 
-// ---- Schema helpers ----
+// ---- Schema helpers — each creates one table + indexes if missing ----
 static void ensureCustomersSchema(SQLite::Database& db)
 {
     db.exec(
@@ -179,6 +185,7 @@ static void ensureReviewsSchema(SQLite::Database& db)
     db.exec("CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customerId)");
 }
 
+// enable FK enforcement then create all tables
 static void ensureAllSchemas(SQLite::Database& db)
 {
     db.exec("PRAGMA foreign_keys = ON");

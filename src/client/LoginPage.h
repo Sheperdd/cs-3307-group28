@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-03-05.
-//
+/**
+ * @file LoginPage.h
+ * @brief Login form — email + password fields, forgot-password link.
+ */
 
 #ifndef LOGIN_H
 #define LOGIN_H

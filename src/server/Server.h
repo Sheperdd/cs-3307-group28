@@ -1,3 +1,8 @@
+/**
+ * @file Server.h
+ * @brief Top-level HTTP server — owns the acceptor, DB, engine services,
+ *        and thread pool; spawns HttpSession coroutines per connection.
+ */
 #pragma once
 
 #include <boost/asio.hpp>

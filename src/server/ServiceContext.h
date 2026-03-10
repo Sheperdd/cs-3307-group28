@@ -1,3 +1,8 @@
+/**
+ * @file ServiceContext.h
+ * @brief Aggregates engine-layer services into a single context passed
+ *        to every HTTP session and endpoint handler.
+ */
 #pragma once
 
 #include "../engine/DatabaseManager.h"

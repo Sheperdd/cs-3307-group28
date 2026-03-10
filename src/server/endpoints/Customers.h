@@ -1,3 +1,8 @@
+/**
+ * @file Customers.h
+ * @brief Handler for /auth/* (register, login, logout) and /users/{id}/*
+ *        (profile, vehicles, symptoms, appointments, reviews, password).
+ */
 #pragma once
 
 #include "EndpointHandler.h"

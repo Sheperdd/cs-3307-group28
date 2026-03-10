@@ -1,3 +1,8 @@
+/**
+ * @file HttpSession.h
+ * @brief Per-connection HTTP session — reads requests, applies auth
+ *        middleware, routes to endpoint handlers, writes responses.
+ */
 #pragma once
 
 #include <boost/asio.hpp>

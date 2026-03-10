@@ -1,3 +1,7 @@
+/**
+ * @file Vehicles.h
+ * @brief Handler for /vehicles/{id} and /vehicles/{id}/symptoms.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

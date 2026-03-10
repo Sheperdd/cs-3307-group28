@@ -1,3 +1,7 @@
+/**
+ * @file PasswordResetPage.cpp
+ * @brief PasswordResetPage layout and button-slot wiring.
+ */
 #include "PasswordResetPage.h"
 
 #include <QLineEdit>

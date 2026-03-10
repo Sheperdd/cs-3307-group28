@@ -1,3 +1,7 @@
+/**
+ * @file Mechanics.h
+ * @brief Handler for /mechanics — search, profile, jobs, appointments, reviews.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

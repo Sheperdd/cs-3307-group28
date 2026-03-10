@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-03-05.
-//
+/**
+ * @file HomePage.cpp
+ * @brief HomePage layout and button signal wiring.
+ */
 
 #include "HomePage.h"
 

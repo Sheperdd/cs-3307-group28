@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-02-28.
-//
+/**
+ * @file SignUpPage.h
+ * @brief Registration form — name, email, role selector, password fields.
+ */
 
 #ifndef SIGNUPPAGE_H
 #define SIGNUPPAGE_H

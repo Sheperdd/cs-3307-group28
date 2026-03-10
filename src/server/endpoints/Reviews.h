@@ -1,3 +1,7 @@
+/**
+ * @file Reviews.h
+ * @brief Handler for /reviews — create and delete.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

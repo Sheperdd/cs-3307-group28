@@ -1,3 +1,7 @@
+/**
+ * @file Customers.cpp
+ * @brief Auth (register/login/logout) and user-profile CRUD implementation.
+ */
 #include "Customers.h"
 #include "../JwtManager.h"
 
@@ -17,7 +21,7 @@ CustomersHandler::handle(const http::request<http::string_body> &req,
     const unsigned ver = req.version();
     const bool ka = req.keep_alive();
 
-    // ── POST /auth/register  or  /auth/login ────────────────────────
+    // ── POST /auth/register, /auth/login or /auth/logout ────────────────────────
     if (path_parts.size() == 2 && path_parts[0] == "auth")
     {
         if (req.method() != http::verb::post)
@@ -125,11 +129,14 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
                                ServiceContext &ctx, net::thread_pool &pool)
 {
     json body;
+    bool parseOk = true;
     try { body = json::parse(req.body()); }
     catch (...) {
+        parseOk = false;
+    }
+    if (!parseOk)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid JSON body", ver, ka);
-    }
 
     if (!body.contains("email") || !body.contains("password"))
         co_return http_utils::make_error(http::status::bad_request,
@@ -210,6 +217,7 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
         {"role", role == UserRole::MECHANIC ? "mechanic" : "customer"}};
 
     auto response = http_utils::make_json_response(http::status::created, responseBody, ver, ka);
+    // set HttpOnly cookie with JWT so subsequent requests are authenticated
     response.set(http::field::set_cookie,
                  "session_token=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400");
     co_return response;
@@ -222,11 +230,14 @@ CustomersHandler::loginUser(const http::request<http::string_body> &req,
                             ServiceContext &ctx, net::thread_pool &pool)
 {
     json body;
+    bool parseOk = true;
     try { body = json::parse(req.body()); }
     catch (...) {
+        parseOk = false;
+    }
+    if (!parseOk)
         co_return http_utils::make_error(http::status::bad_request,
                                          "Invalid JSON body", ver, ka);
-    }
 
     if (!body.contains("email") || !body.contains("password"))
         co_return http_utils::make_error(http::status::bad_request,
@@ -288,6 +299,7 @@ CustomersHandler::logoutUser(unsigned ver, bool ka)
         {"message", "Logged out"}};
 
     auto response = http_utils::make_json_response(http::status::ok, responseBody, ver, ka);
+    // expire cookie to log out
     response.set(http::field::set_cookie,
                  "session_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
     co_return response;

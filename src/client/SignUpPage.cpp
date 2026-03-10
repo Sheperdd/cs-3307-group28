@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-02-28.
-//
+/**
+ * @file SignUpPage.cpp
+ * @brief SignUpPage layout, form wiring, and error display.
+ */
 
 #include "SignUpPage.h"
 #include <QVBoxLayout>

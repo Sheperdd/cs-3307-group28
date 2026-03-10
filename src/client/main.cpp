@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-02-28.
-//
+/**
+ * @file main.cpp
+ * @brief Entry point for the TorqueDesk Qt client.
+ */
 #include <QDebug>
 #include <QApplication>
 

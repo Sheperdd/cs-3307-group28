@@ -1,3 +1,7 @@
+/**
+ * @file Appointments.h
+ * @brief Handler for /appointments — create, get, status update, start job.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

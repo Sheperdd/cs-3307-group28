@@ -1,3 +1,8 @@
+/**
+ * @file http_utils.h
+ * @brief Inline HTTP helpers — path splitting, query-string parsing,
+ *        JSON response builders, cookie extraction.
+ */
 #pragma once
 
 #include <boost/beast.hpp>

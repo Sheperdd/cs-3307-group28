@@ -1,3 +1,7 @@
+/**
+ * @file Symptoms.h
+ * @brief Handler for /symptoms/{id} — get, update, delete.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

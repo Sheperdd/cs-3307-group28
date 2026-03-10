@@ -1,6 +1,7 @@
-//
-// Created by svkol on 2026-03-05.
-//
+/**
+ * @file PasswordResetPage.h
+ * @brief Password reset form — old password + new password fields.
+ */
 
 #ifndef PASSWORDRESETPAGE_H
 #define PASSWORDRESETPAGE_H

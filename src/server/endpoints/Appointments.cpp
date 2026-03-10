@@ -1,3 +1,7 @@
+/**
+ * @file Appointments.cpp
+ * @brief Appointment endpoint implementation — create, get, status, start-job.
+ */
 #include "Appointments.h"
 
 using json = nlohmann::json;
@@ -80,7 +84,6 @@ AppointmentsHandler::createAppointment(const http::request<http::string_body> &r
     co_return http_utils::make_error(http::status::bad_request,
                                      "Invalid JSON body", ver, ka);
 
-  // TODO implement actually calling the function
   AppointmentCreate appointment;
   try
   {

@@ -1,3 +1,8 @@
+/**
+ * @file RatingEngine.cpp
+ * @brief Implementation of RatingEngine — mechanic scoring from reviews
+ *        with time-decay weighting.
+ */
 #include "RatingEngine.h"
 
 RatingEngine::RatingEngine(DatabaseManager& db, int recencyHalfLifeDays)

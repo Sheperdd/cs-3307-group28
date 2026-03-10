@@ -1,3 +1,7 @@
+/**
+ * @file MainWindow.cpp
+ * @brief MainWindow construction, page wiring, and slot implementations.
+ */
 #include "MainWindow.h"
 #include <QStackedWidget>
 #include <QDebug>

@@ -1,3 +1,7 @@
+/**
+ * @file Jobs.h
+ * @brief Handler for /jobs/{id} — get, stage update, complete, notes.
+ */
 #pragma once
 
 #include "EndpointHandler.h"

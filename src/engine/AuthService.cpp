@@ -1,9 +1,15 @@
+/**
+ * @file AuthService.cpp
+ * @brief Implementation of AuthService — password hashing (Argon2id via
+ *        libsodium), user registration, and login verification.
+ */
 #include "AuthService.h"
 #include <sodium.h>
 #include <stdexcept>
 
 AuthService::AuthService(DatabaseManager &db) : db_(db)
 {
+    // libsodium must init before any crypto ops
     if (sodium_init() < 0)
         throw std::runtime_error("AuthService: failed to initialize libsodium");
 }
@@ -11,6 +17,7 @@ AuthService::AuthService(DatabaseManager &db) : db_(db)
 std::string AuthService::hashPassword(const std::string &plaintext)
 {
     char hash[crypto_pwhash_STRBYTES];
+    // Argon2id with interactive cost params
     if (crypto_pwhash_str(hash,
                           plaintext.c_str(), plaintext.size(),
                           crypto_pwhash_OPSLIMIT_INTERACTIVE,
@@ -44,6 +51,7 @@ AuthenticatedUser AuthService::registerUser(const std::string &fullName,
 
     std::string hash = hashPassword(plaintextPassword);
 
+    // build user record and persist
     UserRecord rec{};
     rec.name = fullName;
     rec.email = email;
@@ -61,6 +69,7 @@ AuthenticatedUser AuthService::registerUser(const std::string &fullName,
 std::optional<AuthenticatedUser> AuthService::loginUser(const std::string &email,
                                                          const std::string &plaintextPassword)
 {
+    // look up user by email, verify hash
     auto user = db_.getUserRecordByEmail(email);
     if (!user.has_value())
         return std::nullopt;

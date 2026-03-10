@@ -1,3 +1,8 @@
+/**
+ * @file CustomerService.cpp
+ * @brief Implementation of CustomerService — customer profiles, vehicles,
+ *        symptom forms, mechanic discovery, appointments, jobs, reviews.
+ */
 #include "DatabaseManager.h"
 #include "CustomerService.h"
 #include <iostream>
@@ -166,6 +171,7 @@ std::vector<MechanicMatch> CustomerService::findMatchingMechanics(UserId custome
 	std::vector<MechanicMatch> matches;
 	matches.reserve(candidates.size());
 
+	// score each candidate via rating engine
 	for (const auto &m : candidates)
 	{
 		MechanicMatch match{};
@@ -175,6 +181,7 @@ std::vector<MechanicMatch> CustomerService::findMatchingMechanics(UserId custome
 		matches.push_back(std::move(match));
 	}
 
+	// sort by score descending
 	std::sort(matches.begin(), matches.end(),
 						[](const MechanicMatch &a, const MechanicMatch &b)
 						{
@@ -224,6 +231,7 @@ PriceEstimate CustomerService::requestEstimate(MechanicId mechanicId, SymptomFor
 	}
 
 	PriceEstimate estimate{};
+	// round hourly rate to integer for labor cost
 	int labor = mechanic->hourlyRate > 0.0 ? static_cast<int>(std::lround(mechanic->hourlyRate)) : 0;
 	estimate.laborCost = labor;
 	estimate.partsCost = 0;

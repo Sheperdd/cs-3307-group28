@@ -1,3 +1,7 @@
+/**
+ * @file Mechanics.cpp
+ * @brief Mechanic endpoint implementation — search, profile, jobs, appointments, reviews.
+ */
 #include "Mechanics.h"
 
 net::awaitable<http::response<http::string_body>>

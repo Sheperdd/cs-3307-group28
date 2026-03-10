@@ -1,3 +1,7 @@
+/**
+ * @file test_engine.cpp
+ * @brief Unit tests for engine-layer services (GoogleTest).
+ */
 #include <gtest/gtest.h>
 #include "../src/engine/DatabaseManager.h"
 #include "../src/engine/CustomerService.h"

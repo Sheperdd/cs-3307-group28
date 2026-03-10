@@ -1,26 +1,28 @@
+/**
+ * @file DTO.h
+ * @brief Data Transfer Objects for the HTTP API layer (server ↔ frontend).
+ *
+ * One DTO per table, plus auth helpers. DB-layer Record/Update structs
+ * live in Records.h — don't duplicate them here.
+ *
+ * Tables (7): Customers, Vehicles, SymptomForms, Mechanics,
+ *             Appointments, Jobs, Reviews
+ */
 #pragma once
 #include <string>
 #include <vector>
 #include <optional>
 #include <cstdint>
 
-#include "Records.h" // IDs, enums, TimeSlot, DateRange, Record/Update structs
-
-/*
- * DTO.h — Data Transfer Objects (server ↔ frontend)
- *
- * One DTO per table, plus auth helpers. These are the shapes sent over HTTP.
- * DB-layer Record/Update structs live in Records.h — don't duplicate them here.
- *
- * Tables (7):  Customers, Vehicles, SymptomForms, Mechanics, Appointments, Jobs, Reviews
- */
+#include "Records.h"
 
 // ========================= Shared ID aliases =========================
-using SubscriptionId = int64_t;
-using SessionId = int64_t;
+using SubscriptionId = int64_t; ///< real-time subscription handle
+using SessionId = int64_t;      ///< login session handle
 
 // ========================= Auth (server → frontend) =========================
-// Returned on login; frontend stores for subsequent authenticated requests.
+
+/// @brief Active session returned on login.
 struct Session
 {
     SessionId sessionId{};
@@ -30,7 +32,7 @@ struct Session
     std::string expiresAt; // ISO datetime
 };
 
-// Wrapper returned by the login endpoint.
+/// @brief Wrapper returned by the login endpoint.
 struct AuthResult
 {
     bool success{false};
@@ -39,7 +41,8 @@ struct AuthResult
 };
 
 // ========================= 1. Users =========================
-// POST /users  — frontend → server
+
+/// @brief Payload for creating a new customer account.
 struct CustomerCreate
 {
     std::string fullName;
@@ -50,7 +53,7 @@ struct CustomerCreate
     // Confirm password,phone,createdat should be added -Daimen
 };
 
-// GET /users, GET /users/{id}  — server → frontend
+/// @brief Customer profile sent to frontend.
 struct CustomerDTO
 {
     UserId userId{};
@@ -60,7 +63,7 @@ struct CustomerDTO
     std::string createdAt; // ISO datetime
 };
 
-// PATCH /users/{id}  — frontend → server (all fields optional)
+/// @brief Partial update payload for a customer profile.
 struct CustomerProfileUpdate
 {
     UserId userId{};
@@ -70,7 +73,8 @@ struct CustomerProfileUpdate
 };
 
 // ========================= 2. Vehicles =========================
-// POST /users/{userId}/vehicles  — frontend → server
+
+/// @brief Payload for registering a new vehicle.
 struct VehicleCreate
 {
     std::string vin;
@@ -80,7 +84,7 @@ struct VehicleCreate
     int mileage{0};
 };
 
-// GET /vehicles/{id}, GET /users/{userId}/vehicles  — server → frontend
+/// @brief Vehicle data sent to frontend.
 struct VehicleDTO
 {
     VehicleId vehicleId{};
@@ -93,7 +97,8 @@ struct VehicleDTO
 };
 
 // ========================= 3. Symptom Forms =========================
-// POST /users/{userId}/symptoms  — frontend → server
+
+/// @brief Payload for creating a new symptom form.
 struct SymptomFormCreate
 {
     UserId customerId{};
@@ -102,7 +107,7 @@ struct SymptomFormCreate
     int severity{0}; // 1-5
 };
 
-// GET /symptoms/{id}, GET /users/{userId}/symptoms  — server → frontend
+/// @brief Symptom form data sent to frontend.
 struct SymptomFormDTO
 {
     SymptomFormId formId{};
@@ -113,6 +118,7 @@ struct SymptomFormDTO
     std::string createdAt; // ISO datetime
 };
 
+/// @brief Partial update payload for a symptom form.
 struct SymptomFormUpdateDTO
 {
     SymptomFormId formId{};
@@ -121,7 +127,8 @@ struct SymptomFormUpdateDTO
 };
 
 // ========================= 4. Mechanics =========================
-// POST /mechanics  — frontend → server
+
+/// @brief Payload for creating a mechanic profile.
 struct MechanicCreate
 {
     std::string displayName;
@@ -130,8 +137,7 @@ struct MechanicCreate
     std::vector<std::string> specialties;
 };
 
-// GET /mechanics/{id}, GET /mechanics  — server → frontend
-// Also used for discovery results and profile views.
+/// @brief Mechanic profile sent to frontend (includes computed rating).
 struct MechanicDTO
 {
     MechanicId mechanicId{};
@@ -144,7 +150,7 @@ struct MechanicDTO
     int reviewCount{0};        // computed from reviews
 };
 
-// PATCH /mechanics/{id}  — frontend → server (all fields optional)
+/// @brief Partial update payload for a mechanic profile.
 struct MechanicUpdateDTO
 {
     MechanicId mechanicId{};
@@ -154,7 +160,7 @@ struct MechanicUpdateDTO
     std::optional<std::vector<std::string>> specialties;
 };
 
-// Discovery helper — ranked match result from the matching engine.
+/// @brief Ranked mechanic match from the discovery engine.
 struct MechanicMatch
 {
     MechanicId mechanicId{};
@@ -162,7 +168,7 @@ struct MechanicMatch
     std::vector<std::string> reasons;
 };
 
-// Estimate returned by GET /mechanics/{id}/estimate?formId=…
+/// @brief Price estimate returned for a mechanic + symptom form pair.
 struct PriceEstimate
 {
     int laborCost{};
@@ -173,10 +179,8 @@ struct PriceEstimate
 };
 
 // ========================= 5. Appointments =========================
-// GET /appointments/{id}, GET /users/{userId}/appointments,
-// GET /mechanics/{mechanicId}/appointments  — server → frontend
-// One struct covers list items, detail views, and incoming request views.
 
+/// @brief Payload for creating an appointment request.
 struct AppointmentCreate
 {
     UserId customerId{};
@@ -187,6 +191,7 @@ struct AppointmentCreate
     std::string note;
 };
 
+/// @brief Appointment data sent to frontend (enriched with names, vehicle, symptoms).
 struct AppointmentDTO
 {
     AppointmentId appointmentId{};
@@ -210,7 +215,8 @@ struct AppointmentDTO
 };
 
 // ========================= 6. Jobs =========================
-// Single note entry in the per-job activity log.
+
+/// @brief Single note entry in a job's activity log.
 struct JobNoteDTO
 {
     JobNoteId noteId{};
@@ -219,8 +225,7 @@ struct JobNoteDTO
     std::string createdAt; // ISO datetime
 };
 
-// GET /jobs/{id}, GET /mechanics/{mechanicId}/jobs  — server → frontend
-// One struct covers job status, card view, and detail view.
+/// @brief Full job status/detail sent to frontend.
 struct JobDTO
 {
     JobId jobId{};
@@ -240,7 +245,8 @@ struct JobDTO
 };
 
 // ========================= 7. Reviews =========================
-// POST /reviews  — frontend → server
+
+/// @brief Payload for submitting a new review.
 struct ReviewCreate
 {
     UserId customerId{};
@@ -250,7 +256,7 @@ struct ReviewCreate
     std::string comment;
 };
 
-// GET /reviews, GET /mechanics/{id}/reviews  — server → frontend
+/// @brief Review data sent to frontend.
 struct ReviewDTO
 {
     ReviewId reviewId{};

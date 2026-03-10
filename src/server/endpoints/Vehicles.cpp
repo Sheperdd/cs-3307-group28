@@ -1,3 +1,8 @@
+/**
+ * @file Vehicles.cpp
+ * @brief Vehicle endpoint implementation — get, update, delete, create
+ *        symptom form.
+ */
 #include "Vehicles.h"
 #include "DTOSerialization.h"
 
