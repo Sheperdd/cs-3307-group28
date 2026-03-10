@@ -6,17 +6,20 @@
 class SymptomsHandler : public EndpointHandler
 {
 public:
-  net::awaitable<http::response<http::string_body>>
-  handle(const http::request<http::string_body> &req,
-         const std::vector<std::string> &path_parts,
-         ServiceContext &ctx,
-         net::thread_pool &pool) override;
+    net::awaitable<http::response<http::string_body>>
+    handle(const http::request<http::string_body> &req,
+           const std::vector<std::string> &path_parts,
+           ServiceContext &ctx,
+           net::thread_pool &pool) override;
 
 private:
+    // POST /symptoms
+    net::awaitable<http::response<http::string_body>>
+    createForm(const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
     // GET /symptoms/{id}
     net::awaitable<http::response<http::string_body>>
     getForm(SymptomFormId formId, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
-    // PUT /symptoms/{id}
+    // PATCH /symptoms/{id}
     net::awaitable<http::response<http::string_body>>
     updateForm(SymptomFormId formId, const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
     // DELETE /symptoms/{id}

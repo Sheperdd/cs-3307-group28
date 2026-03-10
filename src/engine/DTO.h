@@ -47,7 +47,7 @@ struct CustomerCreate
     std::string phone;
     std::string passwordHash;
     std::string createdAt; // ISO string
-    //Confirm password,phone,createdat should be added -Daimen
+    // Confirm password,phone,createdat should be added -Daimen
 };
 
 // GET /users, GET /users/{id}  — server → frontend
@@ -111,6 +111,13 @@ struct SymptomFormDTO
     std::string description;
     int severity{0};
     std::string createdAt; // ISO datetime
+};
+
+struct SymptomFormUpdateDTO
+{
+    SymptomFormId formId{};
+    std::optional<std::string> description;
+    std::optional<int> severity;
 };
 
 // ========================= 4. Mechanics =========================
@@ -207,7 +214,7 @@ struct AppointmentDTO
 struct JobNoteDTO
 {
     JobNoteId noteId{};
-    std::string type;      // "update", "blocked", "completion"
+    std::string type; // "update", "blocked", "completion"
     std::string text;
     std::string createdAt; // ISO datetime
 };
@@ -223,9 +230,9 @@ struct JobDTO
     JobStage currentStage{JobStage::RECEIVED};
     int percentComplete{0};
     std::vector<JobNoteDTO> notes; // chronological activity log
-    std::string updatedAt;   // ISO datetime
-    std::string startedAt;   // ISO datetime
-    std::string completedAt; // ISO datetime
+    std::string updatedAt;         // ISO datetime
+    std::string startedAt;         // ISO datetime
+    std::string completedAt;       // ISO datetime
     std::string customerName;
     std::string customerEmail;
     std::string vehicleDescription;

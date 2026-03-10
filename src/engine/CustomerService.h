@@ -15,11 +15,11 @@ class CustomerValidator
 {
 public:
     virtual ~CustomerValidator() = default;
-    virtual bool validateCustomerProfile(const CustomerCreate& profile) = 0;
-    virtual bool validateVehicle(const VehicleCreate& vehicle) = 0;
-    virtual bool validateSymptomForm(const SymptomFormCreate& form) = 0;
-    virtual bool validateReview(const ReviewCreate& review) = 0;
-    virtual bool validateAppointment(const AppointmentCreate& appointment) = 0;
+    virtual bool validateCustomerProfile(const CustomerCreate &profile) = 0;
+    virtual bool validateVehicle(const VehicleCreate &vehicle) = 0;
+    virtual bool validateSymptomForm(const SymptomFormCreate &form) = 0;
+    virtual bool validateReview(const ReviewCreate &review) = 0;
+    virtual bool validateAppointment(const AppointmentCreate &appointment) = 0;
 };
 
 // ----------- CustomerService Class -----------
@@ -47,7 +47,7 @@ public:
     // Customer Profile Management
     UserId createCustomerProfile(const CustomerCreate &profile);
     CustomerDTO getCustomerProfile(UserId customerId);
-    bool updateCustomerProfile(UserId userId,CustomerProfileUpdate &update);
+    bool updateCustomerProfile(UserId userId, CustomerProfileUpdate &update);
     bool deleteCustomerProfile(UserId customerId);
     bool updateCustomerPasswordHash(UserId customerId, const std::string &newHash);
 
@@ -85,7 +85,7 @@ public:
     // Review Management
     ReviewId submitReview(const ReviewCreate &review);
     std::vector<ReviewDTO> listMyReviews(UserId customerId);
-    bool deleteMyReview(UserId customerId, ReviewId reviewId);
+    bool deleteMyReview(ReviewId reviewId);
 };
 
 #endif // CUSTOMERSERVICE_H

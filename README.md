@@ -127,19 +127,19 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 
 *Registration/login, user profile routes, and `/users/{id}/...` nested routes.*
 
-| HTTP Method | Endpoint                       | Status |
-| ----------- | ------------------------------ | ------ |
-| **POST**    | `/auth/register`               | Not implemented (`501`) |
-| **POST**    | `/auth/login`                  | Not implemented (`501`) |
-| **GET**     | `/users/{id}`                  | Wired, but depends on WIP service method |
-| **PATCH**   | `/users/{id}`                  | Implemented (`updateUserRecord`) |
-| **DELETE**  | `/users/{id}`                  | Wired, but depends on WIP service method |
-| **PATCH**   | `/users/{id}/password`         | Wired, but depends on WIP service method |
-| **GET**     | `/users/{userId}/vehicles`     | Implemented |
-| **POST**    | `/users/{userId}/vehicles`     | Implemented |
-| **GET**     | `/users/{userId}/symptoms`     | Wired, but depends on WIP service method |
-| **GET**     | `/users/{userId}/appointments` | Wired, but depends on WIP service method |
-| **GET**     | `/users/{userId}/reviews`      | Wired, but depends on WIP service method |
+| HTTP Method | Endpoint                       | Status | Tested |
+| ----------- | ------------------------------ | ------ | ------ |
+| **POST**    | `/auth/register`               | Not implemented (`501`) | null |
+| **POST**    | `/auth/login`                  | Not implemented (`501`) | null |
+| **GET**     | `/users/{id}`                  | Implemented | null |
+| **PATCH**   | `/users/{id}`                  | Implemented | null |
+| **DELETE**  | `/users/{id}`                  | Implemented | null |
+| **PATCH**   | `/users/{id}/password`         | Implemented | null |
+| **GET**     | `/users/{userId}/vehicles`     | Implemented | null |
+| **POST**    | `/users/{userId}/vehicles`     | Implemented | null |
+| **GET**     | `/users/{userId}/symptoms`     | Implemented | null |
+| **GET**     | `/users/{userId}/appointments` | Implemented | null |
+| **GET**     | `/users/{userId}/reviews`      | Implemented | null |
 
 
 ---
@@ -149,12 +149,12 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *CRUD for vehicles and any `/vehicles/{id}/…` nested routes.*
 
 
-| HTTP Method | Endpoint                         | Status |
-| ----------- | -------------------------------- | ------ |
-| **GET**     | `/vehicles/{id}`                 | Implemented |
-| **PATCH**   | `/vehicles/{id}`                 | Implemented |
-| **DELETE**  | `/vehicles/{id}`                 | Implemented |
-| **POST**    | `/vehicles/{vehicleId}/symptoms` | Not implemented (`501`) |
+| HTTP Method | Endpoint                         | Status | Tested |
+| ----------- | -------------------------------- | ------ | ------ |
+| **GET**     | `/vehicles/{id}`                 | Implemented | null |
+| **PATCH**   | `/vehicles/{id}`                 | Implemented | null |
+| **DELETE**  | `/vehicles/{id}`                 | Implemented | null |
+| **POST**    | `/vehicles/{vehicleId}/symptoms` | Not implemented (`501`) | null |
 
 
 ---
@@ -164,11 +164,12 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *Direct symptom-form access (`/symptoms/…` routes only).*
 
 
-| HTTP Method | Endpoint         | Status |
-| ----------- | ---------------- | ------ |
-| **GET**     | `/symptoms/{id}` | Not implemented (`501`) |
-| **PUT**     | `/symptoms/{id}` | Not implemented (`501`) |
-| **DELETE**  | `/symptoms/{id}` | Not implemented (`501`) |
+| HTTP Method | Endpoint         | Status | Tested |
+| ----------- | ---------------- | ------ | ------ |
+| **POST**    | `/symptoms`      | Not implemented (`501`) | null |
+| **GET**     | `/symptoms/{id}` | Not implemented (`501`) | null |
+| **PATCH**   | `/symptoms/{id}` | Not implemented (`501`) | null |
+| **DELETE**  | `/symptoms/{id}` | Not implemented (`501`) | null |
 
 
 ---
@@ -178,16 +179,16 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *Search, profile management, and any `/mechanics/{id}/…` nested routes.*
 
 
-| HTTP Method | Endpoint                       | Status |
-| ----------- | ------------------------------ | ------ |
-| **GET**     | `/mechanics`                   | Not implemented (`501`) |
-| **GET**     | `/mechanics/{id}`              | Not implemented (`501`) |
-| **PUT**     | `/mechanics/{id}`              | Not implemented (`501`) |
-| **GET**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) |
-| **PUT**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) |
-| **GET**     | `/mechanics/{id}/jobs`         | Not implemented (`501`) |
-| **GET**     | `/mechanics/{id}/appointments` | Not implemented (`501`) |
-| **GET**     | `/mechanics/{id}/reviews`      | Not implemented (`501`) |
+| HTTP Method | Endpoint                       | Status | Tested |
+| ----------- | ------------------------------ | ------ | ------ |
+| **GET**     | `/mechanics`                   | Implemented | null |
+| **GET**     | `/mechanics/{id}`              | Implemented | null |
+| **PUT**     | `/mechanics/{id}`              | Incomplete (handler missing response) | null |
+| **GET**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) | null |
+| **PUT**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) | null |
+| **GET**     | `/mechanics/{id}/jobs`         | Not implemented (`501`) | null |
+| **GET**     | `/mechanics/{id}/appointments` | Not implemented (`501`) | null |
+| **GET**     | `/mechanics/{id}/reviews`      | Not implemented (`501`) | null |
 
 
 ---
@@ -197,12 +198,12 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *Scheduling logic (`/appointments/…` routes only).*
 
 
-| HTTP Method | Endpoint                    | Status |
-| ----------- | --------------------------- | ------ |
-| **POST**    | `/appointments`             | Implemented |
-| **GET**     | `/appointments/{id}`        | Implemented |
-| **PATCH**   | `/appointments/{id}/status` | Not implemented (`501`) |
-| **POST**    | `/appointments/{id}/job`    | Not implemented (`501`) |
+| HTTP Method | Endpoint                    | Status | Tested |
+| ----------- | --------------------------- | ------ | ------ |
+| **POST**    | `/appointments`             | Implemented | null |
+| **GET**     | `/appointments/{id}`        | Implemented | null |
+| **PATCH**   | `/appointments/{id}/status` | Implemented | null |
+| **POST**    | `/appointments/{id}/job`    | Implemented | null |
 
 
 ---
@@ -212,11 +213,13 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *Active work tracking (`/jobs/…` routes only).*
 
 
-| HTTP Method | Endpoint              | Status |
-| ----------- | --------------------- | ------ |
-| **GET**     | `/jobs/{id}`          | Not implemented (`501`) |
-| **PUT**     | `/jobs/{id}/stage`    | Not implemented (`501`) |
-| **POST**    | `/jobs/{id}/complete` | Not implemented (`501`) |
+| HTTP Method | Endpoint              | Status | Tested |
+| ----------- | --------------------- | ------ | ------ |
+| **GET**     | `/jobs/{id}`          | Implemented | null |
+| **PUT**     | `/jobs/{id}/stage`    | Implemented | null |
+| **POST**    | `/jobs/{id}/complete` | Implemented | null |
+| **GET**     | `/jobs/{id}/notes`    | Implemented | null |
+| **POST**    | `/jobs/{id}/notes`    | Implemented | null |
 
 
 ---
@@ -226,9 +229,9 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 *Direct review access (`/reviews/…` routes only).*
 
 
-| HTTP Method | Endpoint        | Status |
-| ----------- | --------------- | ------ |
-| **POST**    | `/reviews`      | Not implemented (`501`) |
-| **DELETE**  | `/reviews/{id}` | Not implemented (`501`) |
+| HTTP Method | Endpoint        | Status | Tested |
+| ----------- | --------------- | ------ | ------ |
+| **POST**    | `/reviews`      | Implemented | null |
+| **DELETE**  | `/reviews/{id}` | Implemented | null |
 
 

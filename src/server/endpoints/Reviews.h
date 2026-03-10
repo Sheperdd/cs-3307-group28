@@ -14,7 +14,7 @@ public:
 
 private:
   // POST /reviews
-  net::awaitable<http::response<http::string_body>> 
+  net::awaitable<http::response<http::string_body>>
   createReview(const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
   // DELETE /reviews/{id}
   net::awaitable<http::response<http::string_body>>

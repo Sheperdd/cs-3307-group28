@@ -8,8 +8,8 @@
 #include <cmath>
 
 CustomerService::CustomerService(DatabaseManager *db, RatingEngine &ratingEngine,
-								 ProfitabilityEngine &profitabilityEngine, CustomerValidator &validator)
-	: db(db), ratingEngine(ratingEngine), profitabilityEngine(profitabilityEngine), validator(validator)
+																 ProfitabilityEngine &profitabilityEngine, CustomerValidator &validator)
+		: db(db), ratingEngine(ratingEngine), profitabilityEngine(profitabilityEngine), validator(validator)
 {
 	if (!this->db)
 	{
@@ -176,10 +176,10 @@ std::vector<MechanicMatch> CustomerService::findMatchingMechanics(UserId custome
 	}
 
 	std::sort(matches.begin(), matches.end(),
-			  [](const MechanicMatch &a, const MechanicMatch &b)
-			  {
-				  return a.matchScore > b.matchScore;
-			  });
+						[](const MechanicMatch &a, const MechanicMatch &b)
+						{
+							return a.matchScore > b.matchScore;
+						});
 
 	return matches;
 }
@@ -260,7 +260,8 @@ JobDTO CustomerService::getJobStatus(JobId jobId)
 
 	// Load the notes log
 	auto noteRecords = db->listJobNotes(job->id);
-	for (const auto& nr : noteRecords) {
+	for (const auto &nr : noteRecords)
+	{
 		JobNoteDTO noteDto;
 		noteDto.noteId = nr.id;
 		noteDto.type = nr.type;
@@ -325,7 +326,8 @@ std::vector<MechanicMatch> CustomerService::scoreAndRank(const std::vector<Mecha
 // TODO: Implement customer profile creation
 UserId CustomerService::createCustomerProfile(const CustomerCreate &profile)
 {
-	if(!validator.validateCustomerProfile(profile)) throw std::invalid_argument("createCustomerProfile: invalid profile");
+	if (!validator.validateCustomerProfile(profile))
+		throw std::invalid_argument("createCustomerProfile: invalid profile");
 	UserRecord rec{};
 	rec.name = profile.fullName;
 	rec.email = profile.email;
@@ -333,7 +335,7 @@ UserId CustomerService::createCustomerProfile(const CustomerCreate &profile)
 	rec.role = UserRole::CUSTOMER;
 	rec.createdAt = profile.createdAt;
 	rec.phone = profile.phone;
-	
+
 	return db->createUser(rec);
 }
 
@@ -358,16 +360,19 @@ CustomerDTO CustomerService::getCustomerProfile(UserId customerId)
 	return dto;
 }
 
-
 // TODO: Implement customer profile update
-bool CustomerService::updateCustomerProfile(UserId id,CustomerProfileUpdate &update)
+bool CustomerService::updateCustomerProfile(UserId id, CustomerProfileUpdate &update)
 {
-	
-	if(id <= 0) throw std::invalid_argument("updateCustomerProfile: invalid customerId");
+
+	if (id <= 0)
+		throw std::invalid_argument("updateCustomerProfile: invalid customerId");
 	UserUpdate recUpdate{};
-	if(update.fullName.has_value()) recUpdate.fullname = update.fullName;
-	if(update.email.has_value()) recUpdate.email = update.email;
-	if(update.phone.has_value()) recUpdate.phone = update.phone;
+	if (update.fullName.has_value())
+		recUpdate.fullname = update.fullName;
+	if (update.email.has_value())
+		recUpdate.email = update.email;
+	if (update.phone.has_value())
+		recUpdate.phone = update.phone;
 	return db->updateUserRecord(id, recUpdate);
 }
 
@@ -382,7 +387,8 @@ bool CustomerService::deleteCustomerProfile(UserId customerId)
 
 bool CustomerService::updateCustomerPasswordHash(UserId customerId, const std::string &newHash)
 {
-	if(customerId <=0) throw std::invalid_argument("updateCustomerPasswordHash: invalid customerId");
+	if (customerId <= 0)
+		throw std::invalid_argument("updateCustomerPasswordHash: invalid customerId");
 	return db->updatePasswordHash(customerId, newHash);
 }
 // =====================================================================
@@ -392,9 +398,12 @@ bool CustomerService::updateCustomerPasswordHash(UserId customerId, const std::s
 // TODO: Implement symptom form creation
 SymptomFormId CustomerService::createSymptomForm(const SymptomFormCreate &form)
 {
-	if(form.customerId <= 0) throw std::invalid_argument("createSymptomForm: invalid customerId");
-	else if(form.vehicleId <= 0) throw std::invalid_argument("createSymptomForm: invalid vehicleId");
-	else if(!validator.validateSymptomForm(form)) throw std::invalid_argument("createSymptomForm: invalid symptom form");
+	if (form.customerId <= 0)
+		throw std::invalid_argument("createSymptomForm: invalid customerId");
+	else if (form.vehicleId <= 0)
+		throw std::invalid_argument("createSymptomForm: invalid vehicleId");
+	else if (!validator.validateSymptomForm(form))
+		throw std::invalid_argument("createSymptomForm: invalid symptom form");
 	SymptomFormRecord rec{};
 	rec.customerId = form.customerId;
 	rec.vehicleId = form.vehicleId;
@@ -424,11 +433,13 @@ SymptomFormDTO CustomerService::getSymptomForm(SymptomFormId formId)
 // TODO: Implement list symptom forms for customer
 std::vector<SymptomFormDTO> CustomerService::listSymptomForms(UserId customerId)
 {
-	if(customerId <= 0) throw std::invalid_argument("listSymptomForms: invalid customerId");
+	if (customerId <= 0)
+		throw std::invalid_argument("listSymptomForms: invalid customerId");
 	auto formRecs = db->listSymptomFormsForCustomer(customerId);
 	std::vector<SymptomFormDTO> dtos;
 	dtos.reserve(formRecs.size());
-	for(const auto &formRec : formRecs){
+	for (const auto &formRec : formRecs)
+	{
 		SymptomFormDTO dto{};
 		dto.formId = formRec.id;
 		dto.customerId = formRec.customerId;
@@ -444,17 +455,21 @@ std::vector<SymptomFormDTO> CustomerService::listSymptomForms(UserId customerId)
 // TODO: Implement symptom form update
 bool CustomerService::updateSymptomForm(SymptomFormId formId, const SymptomFormUpdate &updates)
 {
-	if(formId <= 0) throw std::invalid_argument("updatteSymptomForm: invalid formid");
+	if (formId <= 0)
+		throw std::invalid_argument("updatteSymptomForm: invalid formid");
 	SymptomFormRecord recUpdate{};
-	if(updates.description.has_value()) recUpdate.description = updates.description.value();
-	if(updates.severity.has_value()) recUpdate.severity = updates.severity.value();
+	if (updates.description.has_value())
+		recUpdate.description = updates.description.value();
+	if (updates.severity.has_value())
+		recUpdate.severity = updates.severity.value();
 	return db->updateSymptomForm(formId, updates);
 }
 
 // TODO: Implement symptom form deletion
 bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 {
-	if(formId <= 0) throw std::invalid_argument("deleteSymptomForm: invalid formId");
+	if (formId <= 0)
+		throw std::invalid_argument("deleteSymptomForm: invalid formId");
 	return db->deleteSymptomForm(formId);
 }
 
@@ -464,85 +479,93 @@ bool CustomerService::deleteSymptomForm(SymptomFormId formId)
 
 // TODO: Implement appointment request
 
-AppointmentId CustomerService::requestAppointment(AppointmentCreate appointment){
-    if(!validator.validateAppointment(appointment))     throw std::invalid_argument("requestAppointment: invalid appointment");
-    AppointmentRecord rec{};
-    rec.customerId = appointment.customerId;
-    rec.mechanicId = appointment.mechanicId;
-    rec.symptomFormId = appointment.formId;
-    rec.vehicleId = appointment.vehicleId;
-    rec.scheduledAt = appointment.scheduledAt;
-    rec.note = appointment.note;
-    AppointmentId id = db->createAppointment(rec);
-    return id;  
+AppointmentId CustomerService::requestAppointment(AppointmentCreate appointment)
+{
+	if (!validator.validateAppointment(appointment))
+		throw std::invalid_argument("requestAppointment: invalid appointment");
+	AppointmentRecord rec{};
+	rec.customerId = appointment.customerId;
+	rec.mechanicId = appointment.mechanicId;
+	rec.symptomFormId = appointment.formId;
+	rec.vehicleId = appointment.vehicleId;
+	rec.scheduledAt = appointment.scheduledAt;
+	rec.note = appointment.note;
+	AppointmentId id = db->createAppointment(rec);
+	return id;
 }
-bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string& reason){
-    if(appointmentId <=0) throw std::invalid_argument("cancelAppointment: invalid appointmentId");
-    bool result = db->cancelAppointment(appointmentId, reason);
-    return result;
-
+bool CustomerService::cancelAppointment(AppointmentId appointmentId, const std::string &reason)
+{
+	if (appointmentId <= 0)
+		throw std::invalid_argument("cancelAppointment: invalid appointmentId");
+	bool result = db->cancelAppointment(appointmentId, reason);
+	return result;
 }
-AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId){
-    if(appointmentId <= 0) {
-        throw std::invalid_argument("getAppointment: invalid appointmentId");
-    }
+AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId)
+{
+	if (appointmentId <= 0)
+	{
+		throw std::invalid_argument("getAppointment: invalid appointmentId");
+	}
 
-    auto appointment = db->getAppointmentById(appointmentId);
-    if(!appointment.has_value()) {
-        throw std::runtime_error("getAppointment: appointment not found");
-    }
+	auto appointment = db->getAppointmentById(appointmentId);
+	if (!appointment.has_value())
+	{
+		throw std::runtime_error("getAppointment: appointment not found");
+	}
 
-    AppointmentDTO dto{};
-    dto.appointmentId = appointment->appointmentId;
-    dto.customerId = appointment->customerId;
-    dto.mechanicId = appointment->mechanicId;
-    dto.formId = appointment->symptomFormId;
-    dto.vehicleId = appointment->vehicleId;
-    dto.scheduledAt = appointment->scheduledAt;
-    dto.status = appointment->status;
-    dto.note = appointment->note;
-    dto.createdAt = appointment->createdAt;
-    dto.symptoms = appointment->symptomForm;
+	AppointmentDTO dto{};
+	dto.appointmentId = appointment->appointmentId;
+	dto.customerId = appointment->customerId;
+	dto.mechanicId = appointment->mechanicId;
+	dto.formId = appointment->symptomFormId;
+	dto.vehicleId = appointment->vehicleId;
+	dto.scheduledAt = appointment->scheduledAt;
+	dto.status = appointment->status;
+	dto.note = appointment->note;
+	dto.createdAt = appointment->createdAt;
+	dto.symptoms = appointment->symptomForm;
 
-    return dto;
+	return dto;
 }
 
 bool CustomerService::confirmAppointment(AppointmentId appointmentId)
 {
-    if (appointmentId <= 0) {
-        throw std::invalid_argument("confirmAppointment: invalid appointmentId");
-    }
-    return db->updateAppointmentStatus(appointmentId,AppointmentStatus::CONFIRMED);
+	if (appointmentId <= 0)
+	{
+		throw std::invalid_argument("confirmAppointment: invalid appointmentId");
+	}
+	return db->updateAppointmentStatus(appointmentId, AppointmentStatus::CONFIRMED);
 }
 
 std::vector<AppointmentDTO> CustomerService::listAppointments(UserId customerId)
 {
-    auto appointments = db->listAppointmentsForCustomer(customerId);
-    std::vector<AppointmentDTO> dtos;
-    for (const auto &appointment : appointments) {
-        AppointmentDTO dto{};
-        dto.appointmentId = appointment.appointmentId;
-        dto.customerId = appointment.customerId;
-        dto.mechanicId = appointment.mechanicId;
-        dto.formId = appointment.symptomFormId;
-        dto.vehicleId = appointment.vehicleId;
-        dto.scheduledAt = appointment.scheduledAt;
-        dto.status = appointment.status;
-        dto.note = appointment.note;
-        dto.createdAt = appointment.createdAt;
-        dtos.push_back(dto);
-    }
-    return dtos;
+	auto appointments = db->listAppointmentsForCustomer(customerId);
+	std::vector<AppointmentDTO> dtos;
+	for (const auto &appointment : appointments)
+	{
+		AppointmentDTO dto{};
+		dto.appointmentId = appointment.appointmentId;
+		dto.customerId = appointment.customerId;
+		dto.mechanicId = appointment.mechanicId;
+		dto.formId = appointment.symptomFormId;
+		dto.vehicleId = appointment.vehicleId;
+		dto.scheduledAt = appointment.scheduledAt;
+		dto.status = appointment.status;
+		dto.note = appointment.note;
+		dto.createdAt = appointment.createdAt;
+		dtos.push_back(dto);
+	}
+	return dtos;
 }
 
 bool CustomerService::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
 {
-	if (appointmentId <= 0) {
+	if (appointmentId <= 0)
+	{
 		throw std::invalid_argument("updateAppointmentStatus: invalid appointmentId");
 	}
 	return db->updateAppointmentStatus(appointmentId, status);
 }
-
 
 // =====================================================================
 //  Review Management stubs
@@ -551,7 +574,8 @@ bool CustomerService::updateAppointmentStatus(AppointmentId appointmentId, Appoi
 // TODO: Implement review submission
 ReviewId CustomerService::submitReview(const ReviewCreate &review)
 {
-	if(!validator.validateReview(review)) throw std::invalid_argument("submitReview: invalid review");
+	if (!validator.validateReview(review))
+		throw std::invalid_argument("submitReview: invalid review");
 	ReviewRecord rec{};
 	rec.customerId = review.customerId;
 	rec.mechanicId = review.mechanicId;
@@ -565,11 +589,13 @@ ReviewId CustomerService::submitReview(const ReviewCreate &review)
 // TODO: Implement list reviews by customer
 std::vector<ReviewDTO> CustomerService::listMyReviews(UserId customerId)
 {
-	if(customerId <= 0) throw std::invalid_argument("listMyReviews: invalid customerId");
+	if (customerId <= 0)
+		throw std::invalid_argument("listMyReviews: invalid customerId");
 	auto reviewRecs = db->listReviewsForCustomer(customerId);
 	std::vector<ReviewDTO> dtos;
 	dtos.reserve(reviewRecs.size());
-	for(const auto &reviewRec : reviewRecs){
+	for (const auto &reviewRec : reviewRecs)
+	{
 		ReviewDTO dto{};
 		dto.reviewId = reviewRec.id;
 		dto.customerId = reviewRec.customerId;
@@ -584,8 +610,9 @@ std::vector<ReviewDTO> CustomerService::listMyReviews(UserId customerId)
 }
 
 // TODO: Implement review deletion
-bool CustomerService::deleteMyReview(UserId customerId, ReviewId reviewId)
+bool CustomerService::deleteMyReview(ReviewId reviewId)
 {
-	if(customerId<1||reviewId<0) throw std::invalid_argument("deleteReview: invalid customerid or review id");
+	if (reviewId < 0)
+		throw std::invalid_argument("deleteReview: invalid customerid or review id");
 	db->deleteReview(reviewId);
 }
