@@ -4,7 +4,8 @@ net::awaitable<http::response<http::string_body>>
 MechanicsHandler::handle(const http::request<http::string_body> &req,
                          const std::vector<std::string> &path_parts,
                          ServiceContext &ctx,
-                         net::thread_pool &pool)
+                         net::thread_pool &pool,
+                         const std::optional<AuthInfo> &auth)
 {
   const unsigned ver = req.version();
   const bool ka = req.keep_alive();
@@ -44,21 +45,6 @@ MechanicsHandler::handle(const http::request<http::string_body> &req,
     if (id < 0)
       co_return http_utils::make_error(http::status::bad_request,
                                        "Invalid Mechanic ID", ver, ka);
-    if (path_parts[2] == "schedule")
-    {
-      if (req.method() == http::verb::get)
-      {
-        // GET /mechanics/{id}/schedule
-        co_return co_await getAvailability(id, ver, ka, req, ctx, pool);
-      }
-      if (req.method() == http::verb::put)
-      {
-        // PUT /mechanics/{id}/schedule
-        co_return co_await setAvailability(id, req, ver, ka, ctx, pool);
-      }
-      co_return http_utils::make_error(http::status::method_not_allowed,
-                                       "Method not allowed", ver, ka);
-    }
     if (path_parts[2] == "jobs" && req.method() == http::verb::get)
     {
       // GET /mechanics/{id}/jobs
@@ -226,38 +212,49 @@ MechanicsHandler::updateProfile(MechanicId id, const http::request<http::string_
         co_return r;
       },
       net::use_awaitable);
-}
 
-// GET /mechanics/{id}/schedule
-net::awaitable<http::response<http::string_body>>
-MechanicsHandler::getAvailability(MechanicId id, unsigned ver, bool ka,
-                                  const http::request<http::string_body> &req,
-                                  ServiceContext &ctx, net::thread_pool &pool)
-{
-  // TODO: Refactor to use ctx.mechanicService.getMechanicAvailability()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
-}
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
 
-// PUT /mechanics/{id}/schedule
-net::awaitable<http::response<http::string_body>>
-MechanicsHandler::setAvailability(MechanicId id, const http::request<http::string_body> &req,
-                                  unsigned ver, bool ka,
-                                  ServiceContext &ctx, net::thread_pool &pool)
-{
-  // TODO: Refactor to use ctx.mechanicService.setMechanicAvailability()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json{{"message", "Mechanic profile updated"}}, ver, ka);
 }
 
 // GET /mechanics/{id}/jobs
 net::awaitable<http::response<http::string_body>>
-MechanicsHandler::listOpenJobs(MechanicId id, unsigned ver, bool ka,
+MechanicsHandler::listOpenJobs(MechanicId mechId, unsigned ver, bool ka,
                                ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.listOpenJobsForMechanic()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  struct Result
+  {
+    std::vector<JobDTO> jobs;
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, mechId]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.jobs = ctx.mechanicService.listOpenJobs(mechId);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(res.jobs), ver, ka);
 }
 
 // GET /mechanics/{id}/appointments
@@ -265,17 +262,69 @@ net::awaitable<http::response<http::string_body>>
 MechanicsHandler::listMechanicAppts(MechanicId id, unsigned ver, bool ka,
                                     ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.listAppointmentsForMechanic()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  struct Result
+  {
+    std::vector<AppointmentDTO> appointments;
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, id]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.appointments = ctx.mechanicService.listIncomingRequests(id);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(res.appointments), ver, ka);
 }
 
 // GET /mechanics/{id}/reviews
 net::awaitable<http::response<http::string_body>>
-MechanicsHandler::listMechanicReviews(MechanicId id, unsigned ver, bool ka,
+MechanicsHandler::listMechanicReviews(MechanicId mechId, unsigned ver, bool ka,
                                       ServiceContext &ctx, net::thread_pool &pool)
 {
-  // TODO: Refactor to use ctx.mechanicService.listReviewsForMechanic()
-  co_return http_utils::make_error(http::status::not_implemented,
-                                   "Not implemented", ver, ka);
+  struct Result
+  {
+    std::vector<ReviewDTO> reviews;
+    std::string error;
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, mechId]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.reviews = ctx.mechanicService.listMyReviews(mechId);
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json(res.reviews), ver, ka);
 }

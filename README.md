@@ -154,7 +154,7 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 | **GET**     | `/vehicles/{id}`                 | Implemented | null |
 | **PATCH**   | `/vehicles/{id}`                 | Implemented | null |
 | **DELETE**  | `/vehicles/{id}`                 | Implemented | null |
-| **POST**    | `/vehicles/{vehicleId}/symptoms` | Not implemented (`501`) | null |
+| **POST**    | `/vehicles/{vehicleId}/symptoms` | Implemented | null |
 
 
 ---
@@ -166,10 +166,9 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 
 | HTTP Method | Endpoint         | Status | Tested |
 | ----------- | ---------------- | ------ | ------ |
-| **POST**    | `/symptoms`      | Not implemented (`501`) | null |
-| **GET**     | `/symptoms/{id}` | Not implemented (`501`) | null |
-| **PATCH**   | `/symptoms/{id}` | Not implemented (`501`) | null |
-| **DELETE**  | `/symptoms/{id}` | Not implemented (`501`) | null |
+| **GET**     | `/symptoms/{id}` | Implemented | null |
+| **PATCH**   | `/symptoms/{id}` | Implemented | null |
+| **DELETE**  | `/symptoms/{id}` | Implemented | null |
 
 
 ---
@@ -183,12 +182,10 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
 | ----------- | ------------------------------ | ------ | ------ |
 | **GET**     | `/mechanics`                   | Implemented | null |
 | **GET**     | `/mechanics/{id}`              | Implemented | null |
-| **PUT**     | `/mechanics/{id}`              | Incomplete (handler missing response) | null |
-| **GET**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) | null |
-| **PUT**     | `/mechanics/{id}/schedule`     | Not implemented (`501`) | null |
-| **GET**     | `/mechanics/{id}/jobs`         | Not implemented (`501`) | null |
-| **GET**     | `/mechanics/{id}/appointments` | Not implemented (`501`) | null |
-| **GET**     | `/mechanics/{id}/reviews`      | Not implemented (`501`) | null |
+| **PATCH**   | `/mechanics/{id}`              | Implemented | null |
+| **GET**     | `/mechanics/{id}/jobs`         | Implemented | null |
+| **GET**     | `/mechanics/{id}/appointments` | Implemented | null |
+| **GET**     | `/mechanics/{id}/reviews`      | Implemented | null |
 
 
 ---

@@ -94,6 +94,8 @@ public:
     std::vector<AppointmentRecord> listAppointmentsForCustomer(UserId customerId);
     std::vector<AppointmentRecord> listAppointmentsForMechanic(MechanicId mechanicId);
     bool updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status);
+    bool updateAppointmentScheduledAt(AppointmentId appointmentId, const std::string &newScheduledAt);
+    bool rescheduleAppointment(AppointmentId appointmentId, const std::string &newScheduledAt, const std::string &note);
     bool cancelAppointment(AppointmentId appointmentId, const std::string &reason);
 
     // Jobs

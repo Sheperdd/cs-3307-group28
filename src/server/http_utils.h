@@ -100,4 +100,40 @@ namespace http_utils
     return make_json_response(status, json{{"error", message}}, version, keep_alive);
   }
 
+  /// Extract a named cookie value from the request's Cookie header.
+  /// Returns empty string if not found.
+  inline std::string parse_cookie(
+      const http::request<http::string_body> &req,
+      const std::string &name)
+  {
+    auto it = req.find(http::field::cookie);
+    if (it == req.end())
+      return {};
+
+    std::string_view cookies = it->value();
+    size_t pos = 0;
+    while (pos < cookies.size())
+    {
+      while (pos < cookies.size() && cookies[pos] == ' ')
+        ++pos;
+
+      auto semi = cookies.find(';', pos);
+      std::string_view pair = cookies.substr(
+          pos, semi == std::string_view::npos ? std::string_view::npos : semi - pos);
+
+      auto eq = pair.find('=');
+      if (eq != std::string_view::npos)
+      {
+        std::string_view cookieName = pair.substr(0, eq);
+        if (cookieName == name)
+          return std::string(pair.substr(eq + 1));
+      }
+
+      if (semi == std::string_view::npos)
+        break;
+      pos = semi + 1;
+    }
+    return {};
+  }
+
 } // namespace http_utils

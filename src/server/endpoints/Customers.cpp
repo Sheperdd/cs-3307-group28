@@ -1,14 +1,18 @@
 #include "Customers.h"
+#include "../JwtManager.h"
 
-// =====================================================================
+using json = nlohmann::json;
 //  Main router — dispatches to private sub-handler coroutines
+// =====================================================================
+
 // =====================================================================
 
 net::awaitable<http::response<http::string_body>>
 CustomersHandler::handle(const http::request<http::string_body> &req,
                          const std::vector<std::string> &path_parts,
                          ServiceContext &ctx,
-                         net::thread_pool &pool)
+                         net::thread_pool &pool,
+                         const std::optional<AuthInfo> &auth)
 {
     const unsigned ver = req.version();
     const bool ka = req.keep_alive();
@@ -24,6 +28,8 @@ CustomersHandler::handle(const http::request<http::string_body> &req,
             co_return co_await registerUser(req, ver, ka, ctx, pool);
         else if (path_parts[1] == "login")
             co_return co_await loginUser(req, ver, ka, ctx, pool);
+        else if (path_parts[1] == "logout")
+            co_return co_await logoutUser(ver, ka);
         else
             co_return http_utils::make_error(http::status::not_found,
                                              "Not found", ver, ka);
@@ -109,32 +115,182 @@ CustomersHandler::handle(const http::request<http::string_body> &req,
 }
 
 // =====================================================================
-//  AUTH  (stubs — session / cookie design pending)
+//  AUTH
 // =====================================================================
 
 // POST /auth/register
-// TODO: Implement when session/cookie design is finalized.
-//       Will call ctx.db.createUser(), set session cookie, return AuthResult.
 net::awaitable<http::response<http::string_body>>
 CustomersHandler::registerUser(const http::request<http::string_body> &req,
                                unsigned ver, bool ka,
                                ServiceContext &ctx, net::thread_pool &pool)
 {
-    co_return http_utils::make_error(http::status::not_implemented,
-                                     "Registration not implemented yet", ver, ka);
+    json body;
+    try { body = json::parse(req.body()); }
+    catch (...) {
+        co_return http_utils::make_error(http::status::bad_request,
+                                         "Invalid JSON body", ver, ka);
+    }
+
+    if (!body.contains("email") || !body.contains("password"))
+        co_return http_utils::make_error(http::status::bad_request,
+                                         "Missing 'email' and/or 'password'", ver, ka);
+
+    std::string fullName = body.value("fullName", "");
+    std::string email    = body["email"].get<std::string>();
+    std::string phone    = body.value("phone", "");
+    std::string password = body["password"].get<std::string>();
+
+    UserRole role = UserRole::CUSTOMER;
+    if (body.contains("role"))
+    {
+        std::string roleStr = body["role"].get<std::string>();
+        if (roleStr == "mechanic")
+            role = UserRole::MECHANIC;
+    }
+
+    struct Result
+    {
+        std::optional<AuthenticatedUser> user;
+        std::string error;
+        bool badRequest{false};
+    };
+
+    auto res = co_await net::co_spawn(
+        pool,
+        [&ctx, fullName, email, phone, password, role]() -> net::awaitable<Result>
+        {
+            Result r;
+            try
+            {
+                r.user = ctx.authService.registerUser(fullName, email, phone, password, role);
+            }
+            catch (const std::invalid_argument &e)
+            {
+                r.error = e.what();
+                r.badRequest = true;
+            }
+            catch (const std::exception &e)
+            {
+                r.error = e.what();
+            }
+            co_return r;
+        },
+        net::use_awaitable);
+
+    if (res.badRequest)
+        co_return http_utils::make_error(http::status::bad_request, res.error, ver, ka);
+    if (!res.error.empty())
+        co_return http_utils::make_error(http::status::internal_server_error, res.error, ver, ka);
+
+    // If mechanic, create a blank mechanic profile
+    if (role == UserRole::MECHANIC)
+    {
+        co_await net::co_spawn(
+            pool,
+            [&ctx, userId = res.user->userId]() -> net::awaitable<void>
+            {
+                try
+                {
+                    MechanicCreate mc;
+                    ctx.mechanicService.createMechanicProfile(userId, mc);
+                }
+                catch (...) { /* logged but doesn't fail registration */ }
+                co_return;
+            },
+            net::use_awaitable);
+    }
+
+    std::string token = JwtManager::generateToken(res.user->userId, res.user->role);
+
+    json responseBody = {
+        {"success", true},
+        {"userId", res.user->userId},
+        {"fullName", res.user->fullName},
+        {"email", res.user->email},
+        {"role", role == UserRole::MECHANIC ? "mechanic" : "customer"}};
+
+    auto response = http_utils::make_json_response(http::status::created, responseBody, ver, ka);
+    response.set(http::field::set_cookie,
+                 "session_token=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400");
+    co_return response;
 }
 
 // POST /auth/login
-// TODO: Implement when session/cookie design is finalized.
-//       Will call ctx.db.verifyLogin() + ctx.db.getUserRecordByEmail(),
-//       create a session, set cookie, return AuthResult.
 net::awaitable<http::response<http::string_body>>
 CustomersHandler::loginUser(const http::request<http::string_body> &req,
                             unsigned ver, bool ka,
                             ServiceContext &ctx, net::thread_pool &pool)
 {
-    co_return http_utils::make_error(http::status::not_implemented,
-                                     "Login not implemented yet", ver, ka);
+    json body;
+    try { body = json::parse(req.body()); }
+    catch (...) {
+        co_return http_utils::make_error(http::status::bad_request,
+                                         "Invalid JSON body", ver, ka);
+    }
+
+    if (!body.contains("email") || !body.contains("password"))
+        co_return http_utils::make_error(http::status::bad_request,
+                                         "Missing 'email' and/or 'password'", ver, ka);
+
+    std::string email    = body["email"].get<std::string>();
+    std::string password = body["password"].get<std::string>();
+
+    struct Result
+    {
+        std::optional<AuthenticatedUser> user;
+        std::string error;
+    };
+
+    auto res = co_await net::co_spawn(
+        pool,
+        [&ctx, email, password]() -> net::awaitable<Result>
+        {
+            Result r;
+            try
+            {
+                r.user = ctx.authService.loginUser(email, password);
+            }
+            catch (const std::exception &e)
+            {
+                r.error = e.what();
+            }
+            co_return r;
+        },
+        net::use_awaitable);
+
+    if (!res.error.empty())
+        co_return http_utils::make_error(http::status::internal_server_error, res.error, ver, ka);
+    if (!res.user.has_value())
+        co_return http_utils::make_error(http::status::unauthorized,
+                                         "Invalid email or password", ver, ka);
+
+    std::string token = JwtManager::generateToken(res.user->userId, res.user->role);
+
+    json responseBody = {
+        {"success", true},
+        {"userId", res.user->userId},
+        {"fullName", res.user->fullName},
+        {"email", res.user->email},
+        {"role", res.user->role == UserRole::MECHANIC ? "mechanic" : "customer"}};
+
+    auto response = http_utils::make_json_response(http::status::ok, responseBody, ver, ka);
+    response.set(http::field::set_cookie,
+                 "session_token=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400");
+    co_return response;
+}
+
+// POST /auth/logout
+net::awaitable<http::response<http::string_body>>
+CustomersHandler::logoutUser(unsigned ver, bool ka)
+{
+    json responseBody = {
+        {"success", true},
+        {"message", "Logged out"}};
+
+    auto response = http_utils::make_json_response(http::status::ok, responseBody, ver, ka);
+    response.set(http::field::set_cookie,
+                 "session_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+    co_return response;
 }
 
 // =====================================================================
@@ -316,7 +472,8 @@ CustomersHandler::updatePassword(UserId userId,
             Result r;
             try
             {
-                r.ok = ctx.customerService.updateCustomerPasswordHash(userId, newPassword);
+                r.ok = ctx.customerService.updateCustomerPasswordHash(
+                    userId, ctx.authService.hashPassword(newPassword));
             }
             catch (const std::exception &e)
             {

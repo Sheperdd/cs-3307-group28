@@ -10,7 +10,8 @@ public:
   handle(const http::request<http::string_body> &req,
          const std::vector<std::string> &path_parts,
          ServiceContext &ctx,
-         net::thread_pool &pool) override;
+         net::thread_pool &pool,
+         const std::optional<AuthInfo> &auth) override;
 
 private:
   // GET /jobs/{id}

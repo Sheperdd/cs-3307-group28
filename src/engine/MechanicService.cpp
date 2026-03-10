@@ -221,9 +221,7 @@ bool MechanicService::RescheduleAppointment(AppointmentId appointmentId, TimeSlo
         throw std::runtime_error("Appointment cannot be rescheduled in its current state");
     }
 
-    // TODO: update scheduledAt with proposedSlot
-
-    db.updateAppointmentStatus(appointmentId, AppointmentStatus::SCHEDULED);
+    db.rescheduleAppointment(appointmentId, proposedSlot.start, note);
 
     return true;
 }

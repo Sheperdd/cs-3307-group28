@@ -1120,8 +1120,31 @@ std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForMechanic(Mech
 }
 
 std::vector<AppointmentRecord> DatabaseManager::listAppointmentsForCustomer(UserId customerId) {
-    // TODO: implement once appointments schema is finalised
-    return {};
+    std::vector<AppointmentRecord> results;
+    if (customerId <= 0) return results;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "SELECT id, customerId, mechanicId, vehicleId, symptomFormId, "
+            "scheduledAt, status, note, createdAt FROM appointments WHERE customerId = ?");
+        stmt.bind(1, static_cast<int64_t>(customerId));
+        while (stmt.executeStep()) {
+            AppointmentRecord r;
+            r.appointmentId = stmt.getColumn(0).getInt64();
+            r.customerId = stmt.getColumn(1).getInt64();
+            r.mechanicId = stmt.getColumn(2).getInt64();
+            r.vehicleId = stmt.getColumn(3).getInt64();
+            r.symptomFormId = stmt.getColumn(4).getInt64();
+            r.scheduledAt = stmt.getColumn(5).getText();
+            r.status = static_cast<AppointmentStatus>(stmt.getColumn(6).getInt());
+            r.note = stmt.getColumn(7).getText();
+            r.createdAt = stmt.getColumn(8).getText();
+            results.push_back(std::move(r));
+        }
+        return results;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("listAppointmentsForCustomer failed: ") + e.what());
+    }
 }
 
 bool DatabaseManager::updateAppointmentStatus(AppointmentId appointmentId, AppointmentStatus status)
@@ -1136,6 +1159,38 @@ bool DatabaseManager::updateAppointmentStatus(AppointmentId appointmentId, Appoi
         return stmt.exec() > 0;
     } catch (const SQLite::Exception &e) {
         throw std::runtime_error(std::string("updateAppointmentStatus failed: ") + e.what());
+    }
+}
+
+bool DatabaseManager::updateAppointmentScheduledAt(AppointmentId appointmentId, const std::string &newScheduledAt)
+{
+    if (appointmentId <= 0) return false;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "UPDATE appointments SET scheduledAt = ? WHERE id = ?");
+        stmt.bind(1, newScheduledAt);
+        stmt.bind(2, static_cast<int64_t>(appointmentId));
+        return stmt.exec() > 0;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("updateAppointmentScheduledAt failed: ") + e.what());
+    }
+}
+
+bool DatabaseManager::rescheduleAppointment(AppointmentId appointmentId, const std::string &newScheduledAt, const std::string &note)
+{
+    if (appointmentId <= 0) return false;
+    try {
+        ensureAppointmentsSchema(db);
+        SQLite::Statement stmt(db,
+            "UPDATE appointments SET scheduledAt = ?, note = ?, status = ? WHERE id = ?");
+        stmt.bind(1, newScheduledAt);
+        stmt.bind(2, note);
+        stmt.bind(3, static_cast<int>(AppointmentStatus::REQUESTED));
+        stmt.bind(4, static_cast<int64_t>(appointmentId));
+        return stmt.exec() > 0;
+    } catch (const SQLite::Exception &e) {
+        throw std::runtime_error(std::string("rescheduleAppointment failed: ") + e.what());
     }
 }
 
@@ -1316,12 +1371,11 @@ bool DatabaseManager::addMechanic(const std::string &name, const std::string &em
     return createUser(name, email, password, UserRole::MECHANIC) != -1;
 }
 
-bool DatabaseManager::verifyLogin(const std::string &email, const std::string &password)
+// DEPRECATED: plaintext comparison – use AuthService::loginUser() instead.
+bool DatabaseManager::verifyLogin(const std::string &email, const std::string & /*password*/)
 {
-    auto rec = getUserRecordByEmail(email);
-    if (!rec.has_value())
-        return false;
-    return rec->passwordHash == password;
+    (void)email;
+    return false;
 }
 
 bool DatabaseManager::emailExists(const std::string &email)

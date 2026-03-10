@@ -9,6 +9,7 @@
 #include "../engine/DefaultCustomerValidator.h"
 #include "../engine/CustomerService.h"
 #include "../engine/MechanicService.h"
+#include "../engine/AuthService.h"
 #include "ServiceContext.h"
 
 namespace net = boost::asio;
@@ -41,6 +42,7 @@ private:
     DefaultCustomerValidator validator_;
     CustomerService        customerService_;
     MechanicService        mechanicService_;
+    AuthService            authService_;
 
     // --- Service context passed to every session ---
     ServiceContext ctx_;

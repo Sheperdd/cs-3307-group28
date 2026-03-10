@@ -6,7 +6,8 @@ net::awaitable<http::response<http::string_body>>
 AppointmentsHandler::handle(const http::request<http::string_body> &req,
                             const std::vector<std::string> &path_parts,
                             ServiceContext &ctx,
-                            net::thread_pool &pool)
+                            net::thread_pool &pool,
+                            const std::optional<AuthInfo> &auth)
 {
 
   const unsigned ver = req.version();

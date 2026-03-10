@@ -12,7 +12,8 @@ Server::Server(net::io_context &io_context, short port)
     , profitabilityEngine_(db_, 80, 0.13)                                 // $80/hr default, 13 % tax
     , customerService_(&db_, ratingEngine_, profitabilityEngine_, validator_)
     , mechanicService_(db_)
-    , ctx_{ db_, customerService_, mechanicService_ }
+    , authService_(db_)
+    , ctx_{ db_, customerService_, mechanicService_, authService_ }
 {
     // Build the acceptor, bind, and listen – all before spawning the coroutine
     tcp::acceptor acceptor(io_context, {tcp::v4(), static_cast<net::ip::port_type>(port)});

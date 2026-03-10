@@ -10,7 +10,8 @@ public:
   handle(const http::request<http::string_body> &req,
          const std::vector<std::string> &path_parts,
          ServiceContext &ctx,
-         net::thread_pool &pool) override;
+         net::thread_pool &pool,
+         const std::optional<AuthInfo> &auth) override;
 
 private:
   // POST /auth/register
@@ -23,6 +24,9 @@ private:
   loginUser(const http::request<http::string_body> &req,
             unsigned ver, bool ka,
             ServiceContext &ctx, net::thread_pool &pool);
+  // POST /auth/logout
+  net::awaitable<http::response<http::string_body>>
+  logoutUser(unsigned ver, bool ka);
 
   // GET /users/{id}
   net::awaitable<http::response<http::string_body>>

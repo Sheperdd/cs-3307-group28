@@ -10,12 +10,10 @@ public:
     handle(const http::request<http::string_body> &req,
            const std::vector<std::string> &path_parts,
            ServiceContext &ctx,
-           net::thread_pool &pool) override;
+           net::thread_pool &pool,
+         const std::optional<AuthInfo> &auth) override;
 
 private:
-    // POST /symptoms
-    net::awaitable<http::response<http::string_body>>
-    createForm(const http::request<http::string_body> &req, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);
     // GET /symptoms/{id}
     net::awaitable<http::response<http::string_body>>
     getForm(SymptomFormId formId, unsigned ver, bool ka, ServiceContext &ctx, net::thread_pool &pool);

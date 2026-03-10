@@ -1,5 +1,6 @@
 #include "HttpSession.h"
 #include "http_utils.h"
+#include "JwtManager.h"
 
 // Endpoint handlers
 #include "endpoints/Customers.h"
@@ -62,7 +63,34 @@ HttpSession::route_request(const http::request<http::string_body> &req)
         co_return http_utils::make_error(http::status::not_found,
                                          "Not found", req.version(), req.keep_alive());
 
-    co_return co_await it->second->handle(req, parts, ctx_, pool_);
+    // ── Auth middleware ──────────────────────────────────────────────
+    bool isPublic = false;
+
+    // All /auth/* routes are public (register, login, logout)
+    if (parts[0] == "auth")
+        isPublic = true;
+
+    // GET /mechanics (public search listing)
+    if (parts[0] == "mechanics" && parts.size() == 1 && req.method() == http::verb::get)
+        isPublic = true;
+
+    std::optional<AuthInfo> auth;
+    if (!isPublic)
+    {
+        auto token = http_utils::parse_cookie(req, "session_token");
+        if (token.empty())
+            co_return http_utils::make_error(http::status::unauthorized,
+                                             "Authentication required",
+                                             req.version(), req.keep_alive());
+
+        auth = JwtManager::verifyToken(token);
+        if (!auth.has_value())
+            co_return http_utils::make_error(http::status::unauthorized,
+                                             "Invalid or expired token",
+                                             req.version(), req.keep_alive());
+    }
+
+    co_return co_await it->second->handle(req, parts, ctx_, pool_, auth);
 }
 
 // ---------------------------------------------------------------------------

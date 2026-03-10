@@ -24,11 +24,11 @@ FetchContent_MakeAvailable(SQLiteCpp)
 
 # Download JSON Library
 FetchContent_Declare(
-    json
+    nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.12.0
 )
-FetchContent_MakeAvailable(json)
+FetchContent_MakeAvailable(nlohmann_json)
 
 # Download GoogleTest (For testing logic)
 FetchContent_Declare(
@@ -37,6 +37,18 @@ FetchContent_Declare(
     GIT_TAG v1.17.0
 )
 FetchContent_MakeAvailable(googletest)
+
+# Download jwt-cpp (Header-only JWT library, needs OpenSSL)
+find_package(OpenSSL REQUIRED)
+
+FetchContent_Declare(
+    jwt-cpp
+    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+    GIT_TAG v0.7.0
+)
+set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JWT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(jwt-cpp)
 
 # --- Adding our code ---
 add_subdirectory(src/engine)

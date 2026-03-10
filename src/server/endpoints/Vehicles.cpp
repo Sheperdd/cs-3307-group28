@@ -6,7 +6,8 @@ net::awaitable<http::response<http::string_body>>
 VehiclesHandler::handle(const http::request<http::string_body> &req,
                         const std::vector<std::string> &path_parts,
                         ServiceContext &ctx,
-                        net::thread_pool &pool)
+                        net::thread_pool &pool,
+                        const std::optional<AuthInfo> &auth)
 {
     const unsigned ver = req.version();
     const bool ka = req.keep_alive();
@@ -152,7 +153,66 @@ VehiclesHandler::createSymptomForm(VehicleId vehicleId,
                                    unsigned ver, bool ka,
                                    ServiceContext &ctx, net::thread_pool &pool)
 {
-    // TODO: Refactor to use ctx.customerService.createSymptomForm()
-    co_return http_utils::make_error(http::status::not_implemented,
-                                     "Not implemented", ver, ka);
+    json body;
+  bool parseOk = true;
+  try
+  {
+    body = json::parse(req.body());
+  }
+  catch (...)
+  {
+    parseOk = false;
+  }
+  if (!parseOk)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     "Invalid JSON body", ver, ka);
+  SymptomFormCreate formCreate;
+  try
+  {
+    formCreate = body.get<SymptomFormCreate>();
+  }
+  catch (const std::exception &e)
+  {
+    co_return http_utils::make_error(http::status::bad_request,
+                                     std::string("Bad symptom form payload: ") + e.what(),
+                                     ver, ka);
+  }
+
+  struct Result
+  {
+    SymptomFormId id{-1};
+    std::string error;
+    bool badRequest{false};
+  };
+
+  auto res = co_await net::co_spawn(
+      pool,
+      [&ctx, formCreate]() -> net::awaitable<Result>
+      {
+        Result r;
+        try
+        {
+          r.id = ctx.customerService.createSymptomForm(formCreate);
+        }
+        catch (const std::invalid_argument &e)
+        {
+          r.error = e.what();
+          r.badRequest = true;
+        }
+        catch (const std::exception &e)
+        {
+          r.error = e.what();
+        }
+        co_return r;
+      },
+      net::use_awaitable);
+
+  if (res.badRequest)
+    co_return http_utils::make_error(http::status::bad_request,
+                                     res.error, ver, ka);
+  if (!res.error.empty())
+    co_return http_utils::make_error(http::status::internal_server_error,
+                                     res.error, ver, ka);
+  co_return http_utils::make_json_response(http::status::ok,
+                                           json{{"symptomFormId", res.id}}, ver, ka);
 }

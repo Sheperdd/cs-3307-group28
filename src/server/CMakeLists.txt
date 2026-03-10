@@ -25,10 +25,11 @@ add_executable(TorqueServer
     endpoints/Vehicles.cpp
 )
 
-# Link the Engine (like the Backend Logic), Boost, and Threads to this executable
+# Link the Engine, Boost, Threads, and jwt-cpp to this executable
 target_link_libraries(TorqueServer 
     PRIVATE 
     TorqueEngine        # Database Logic
     Boost::system       # Networking (Asio + Beast)
     Threads::Threads    # Thread pool for DB operations
+    jwt-cpp::jwt-cpp    # JWT token generation/verification
 )

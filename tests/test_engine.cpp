@@ -3,6 +3,7 @@
 #include "../src/engine/CustomerService.h"
 #include "../src/engine/RatingEngine.h"
 #include "../src/engine/ProfitabilityEngine.h"
+#include "../src/engine/AuthService.h"
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <cstdio> // For removing the file
 
@@ -697,4 +698,47 @@ TEST_F(DatabaseTests, MarkJobComplete) {
 
     bool result = service.markJobComplete(mechanicId, jobId, "All repairs done");
     EXPECT_TRUE(result);
+}
+
+// ==================== Auth Tests ====================
+
+TEST_F(DatabaseTests, AuthHashAndVerify) {
+    DatabaseManager db;
+    AuthService auth(db);
+
+    auto hash = auth.hashPassword("MySecret123");
+    EXPECT_FALSE(hash.empty());
+    EXPECT_TRUE(auth.verifyPassword("MySecret123", hash));
+    EXPECT_FALSE(auth.verifyPassword("WrongPassword", hash));
+}
+
+TEST_F(DatabaseTests, AuthRegisterAndLogin) {
+    DatabaseManager db;
+    AuthService auth(db);
+
+    auto reg = auth.registerUser("Alice", "alice@example.com", "555-0100", "password123", UserRole::CUSTOMER);
+    EXPECT_EQ(reg.email, "alice@example.com");
+    EXPECT_EQ(reg.role, UserRole::CUSTOMER);
+
+    auto login = auth.loginUser("alice@example.com", "password123");
+    ASSERT_TRUE(login.has_value());
+    EXPECT_EQ(login->userId, reg.userId);
+}
+
+TEST_F(DatabaseTests, AuthDuplicateEmail) {
+    DatabaseManager db;
+    AuthService auth(db);
+
+    auth.registerUser("Bob", "bob@example.com", "555-0101", "password123", UserRole::CUSTOMER);
+
+    EXPECT_THROW(auth.registerUser("Bob2", "bob@example.com", "555-0102", "password456", UserRole::CUSTOMER),
+                 std::invalid_argument);
+}
+
+TEST_F(DatabaseTests, AuthPasswordTooShort) {
+    DatabaseManager db;
+    AuthService auth(db);
+
+    EXPECT_THROW(auth.registerUser("Eve", "eve@example.com", "555-0103", "short", UserRole::CUSTOMER),
+                 std::invalid_argument);
 }

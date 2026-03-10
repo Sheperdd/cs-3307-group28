@@ -523,7 +523,37 @@ AppointmentDTO CustomerService::getAppointment(AppointmentId appointmentId)
 	dto.status = appointment->status;
 	dto.note = appointment->note;
 	dto.createdAt = appointment->createdAt;
-	dto.symptoms = appointment->symptomForm;
+
+	auto customer = db->getUserRecordById(appointment->customerId);
+	if (customer.has_value())
+	{
+		dto.customerName = customer->name;
+		dto.customerEmail = customer->email;
+		dto.customerPhone = customer->phone;
+	}
+
+	auto vehicle = db->getVehicleById(appointment->vehicleId);
+	if (vehicle.has_value())
+	{
+		dto.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
+	}
+
+	if (appointment->symptomFormId > 0)
+	{
+		try
+		{
+			auto form = db->getSymptomFormById(appointment->symptomFormId);
+			dto.symptoms = form.description;
+			dto.severity = form.severity;
+		}
+		catch (...) {}
+	}
+
+	auto mechanic = db->getMechanicByUserId(appointment->mechanicId);
+	if (mechanic.has_value())
+	{
+		dto.mechanicName = mechanic->displayName;
+	}
 
 	return dto;
 }
@@ -553,6 +583,38 @@ std::vector<AppointmentDTO> CustomerService::listAppointments(UserId customerId)
 		dto.status = appointment.status;
 		dto.note = appointment.note;
 		dto.createdAt = appointment.createdAt;
+
+		auto customer = db->getUserRecordById(appointment.customerId);
+		if (customer.has_value())
+		{
+			dto.customerName = customer->name;
+			dto.customerEmail = customer->email;
+			dto.customerPhone = customer->phone;
+		}
+
+		auto vehicle = db->getVehicleById(appointment.vehicleId);
+		if (vehicle.has_value())
+		{
+			dto.vehicleDescription = std::to_string(vehicle->year) + " " + vehicle->make + " " + vehicle->model;
+		}
+
+		if (appointment.symptomFormId > 0)
+		{
+			try
+			{
+				auto form = db->getSymptomFormById(appointment.symptomFormId);
+				dto.symptoms = form.description;
+				dto.severity = form.severity;
+			}
+			catch (...) {}
+		}
+
+		auto mechanic = db->getMechanicByUserId(appointment.mechanicId);
+		if (mechanic.has_value())
+		{
+			dto.mechanicName = mechanic->displayName;
+		}
+
 		dtos.push_back(dto);
 	}
 	return dtos;
@@ -614,5 +676,5 @@ bool CustomerService::deleteMyReview(ReviewId reviewId)
 {
 	if (reviewId < 0)
 		throw std::invalid_argument("deleteReview: invalid customerid or review id");
-	db->deleteReview(reviewId);
+	return db->deleteReview(reviewId);
 }
