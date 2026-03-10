@@ -10,7 +10,7 @@ Built for a third-year software engineering course, TorqueDesk is a platform des
 
 ## Environment Setup
 
-TorqueDesk uses **CMake (>= 3.20)**, **Ninja**, and **C++20**. Dependencies (nlohmann/json + GoogleTest) are downloaded automatically via CMake **FetchContent** (no manual installs needed beyond basic build tools).
+TorqueDesk uses **CMake (>= 3.20)**, **Ninja**, and **C++20**. Dependencies (nlohmann/json + GoogleTest, etc.) are downloaded automatically via CMake **FetchContent** (no manual installs needed beyond basic build tools).
 
 ---
 
