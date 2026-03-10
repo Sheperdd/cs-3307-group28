@@ -16,19 +16,61 @@ TorqueDesk uses **CMake (>= 3.20)**, **Ninja**, and **C++20**. Dependencies (nlo
 
 ## Prerequisites
 
+The following packages must be installed before building. Everything listed under **Auto-fetched** below is downloaded automatically by CMake — no manual install needed for those.
+
+### Auto-fetched via CMake FetchContent (no action required)
+
+| Library | Version | Purpose |
+| ------- | ------- | ------- |
+| [SQLiteCpp](https://github.com/SRombauts/SQLiteCpp) | 3.3.3 | C++ SQLite wrapper |
+| [nlohmann/json](https://github.com/nlohmann/json) | v3.12.0 | JSON serialization |
+| [GoogleTest](https://github.com/google/googletest) | v1.17.0 | Unit testing |
+| [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | v0.7.0 | JWT generation/validation |
+
+### Must be installed manually
+
+| Package | Component | Used by |
+| ------- | --------- | ------- |
+| C++20 toolchain (GCC ≥ 11 or Clang ≥ 13) | — | Everything |
+| CMake ≥ 3.20 | — | Build system |
+| Ninja | — | Build generator |
+| Git | — | FetchContent |
+| OpenSSL (dev headers + libs) | libssl / libcrypto | jwt-cpp |
+| Qt 5 | Core, Widgets, Network | Client (`TorqueClient`) |
+| Boost | system | Server (`TorqueServer`) |
+
+---
+
 ### macOS
 
 1. Install Xcode Command Line Tools:
-  - `xcode-select --install`
-2. Install CMake + Ninja (Homebrew):
-  - `brew install cmake ninja`
+   ```bash
+   xcode-select --install
+   ```
+2. Install all required packages via Homebrew:
+   ```bash
+   brew install cmake ninja openssl qt@5 boost
+   ```
+3. If CMake cannot find Qt5, add it to your path:
+   ```bash
+   export PATH="$(brew --prefix qt@5)/bin:$PATH"
+   ```
 
 ### Linux (native or WSL)
 
-Install a C++ toolchain, CMake, Ninja, and Git using your distro package manager.
-Example (Ubuntu/WSL):
+Install all required packages via your distro package manager.
 
-- `sudo apt update && sudo apt install -y build-essential cmake ninja-build git`
+**Ubuntu / Debian / WSL:**
+```bash
+sudo apt update && sudo apt install -y \
+  build-essential \
+  cmake \
+  ninja-build \
+  git \
+  libssl-dev \
+  qtbase5-dev \
+  libboost-system-dev
+```
 
 > Note: First configure/build may take longer because CMake will fetch and build dependencies.
 
@@ -50,23 +92,20 @@ From the repo root:
 
 ## Run Unit Tests
 
-After building:
+After building, you can run all tests at once via CTest:
 
-- `ctest --test-dir build --output-on-failure`
+```bash
+ctest --test-dir build --output-on-failure
+```
 
-If CTest doesn't find tests in your configuration, you can also run the test binary directly:
+Or run each test suite individually:
 
-- `./build/tests/UnitTests` (path may vary by generator/config)
-
----
-
-## Visual Studio 2022 + WSL workflow (Windows)
-
-If you're using Visual Studio with a WSL toolchain:
-
-- Open the folder as a CMake project.
-- Ensure the selected kit/toolchain targets WSL.
-- Build with the default CMake targets (Ninja is typical for VS CMake projects).
+| Suite | Source file | Command |
+| ----- | ----------- | ------- |
+| Engine tests | `test_engine.cpp` | `./build/tests/UnitTests` |
+| Customer service tests | `test_customer_service.cpp` | `./build/tests/CustomerServiceTests` |
+| Mechanic service tests | `test_mechanic_service.cpp` | `./build/tests/MechanicServiceTests` |
+| Auth service tests | `test_auth_service.cpp` | `./build/tests/AuthServiceTests` |
 
 ---
 
@@ -74,11 +113,7 @@ If you're using Visual Studio with a WSL toolchain:
 
 - The database is always accessed through DatabaseManager, but since SQLite is blocking (can only do one call at a time), every DB call is offloaded to a net::thread_pool via net::co_spawn when working on the server.
 
-## Potential Errors
-
-- db.updateVehicle() and db.deleteVehicle() return bool. If they return false because the ID doesn't exist (vs. a real DB error), the client still gets a 500 Internal Server Error instead of a 404 Not Found. The DB API doesn't distinguish these two cases.
-- No validation on VehicleRecord fields after deserialization
-After parsing, there is no validation (like if the year is reasonable, vin is non-empty, mileage is non-negative). Garbage data can be written directly to the db.
+---
 
 ## Database Schema
 
@@ -94,7 +129,7 @@ This section describes the physical SQLite schema (`DatabaseManager`), not respo
   - `id` (PK), `ownerUserId` (FK -> `customers.id`), `vin` (UNIQUE), `make`, `model`, `year`, `mileage`, `createdAt`
 - `symptom_forms`
   - `id` (PK), `customerId` (FK -> `customers.id`), `vehicleId` (FK -> `vehicles.id`), `description`, `severity`, `createdAt`
-- `mechanic_availability`
+- `mechanic_availability` (not really used)
   - `id` (PK), `mechanicId` (FK -> `mechanics.id`), `start`, `end`, UNIQUE(`mechanicId`,`start`,`end`)
 - `appointments`
   - `id` (PK), `customerId` (FK -> `customers.id`), `mechanicId` (FK -> `mechanics.id`), `vehicleId` (FK -> `vehicles.id`), `symptomFormId` (FK -> `symptom_forms.id`), `scheduledAt`, `status`, `note`, `createdAt`
