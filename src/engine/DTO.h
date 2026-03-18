@@ -38,6 +38,7 @@ struct AuthResult
     bool success{false};
     std::string message;            // "ok", "invalid credentials", etc.
     std::optional<Session> session; // present only on success
+    std::string token;              // JWT token for authenticated requests
 };
 
 // ========================= 1. Users =========================

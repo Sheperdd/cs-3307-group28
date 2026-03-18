@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)   # ADD THIS - runs the MOC compiler
 set(CMAKE_AUTOUIC ON)   # ADD THIS - for .ui files
 set(CMAKE_AUTORCC ON)   # ADD THIS - for .qrc resource files
 
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets Network)
+find_package(Qt5 COMPONENTS Core Widgets Network REQUIRED)
 
 add_executable(TorqueClient
         Customer/main.cpp
@@ -49,7 +49,8 @@ add_executable(TorqueClient
         Mechanic/MyAppointmentsPage.cpp
         Mechanic/MyJobsPage.cpp
         Mechanic/MyJobsPage.h
-
+        api/TorqueNetworkManager.cpp
+        services/AuthService.cpp
 )
 
 target_link_libraries(TorqueClient
@@ -57,4 +58,5 @@ target_link_libraries(TorqueClient
         Qt5::Core
         Qt5::Widgets
         Qt5::Network
+        nlohmann_json::nlohmann_json
 )

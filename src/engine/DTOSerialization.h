@@ -399,7 +399,8 @@ inline void from_json(const json &j, JobDTO &jd)
     jd.mechanicId = j.value("mechanicId", MechanicId{0});
     jd.currentStage = j.value("currentStage", JobStage::RECEIVED);
     jd.percentComplete = j.value("percentComplete", 0);
-    if (j.contains("notes")) {
+    if (j.contains("notes"))
+    {
         jd.notes = j.at("notes").get<std::vector<JobNoteDTO>>();
     }
     jd.updatedAt = j.value("updatedAt", std::string{});
@@ -412,6 +413,15 @@ inline void from_json(const json &j, JobDTO &jd)
 }
 
 // ----------- Session (server → frontend) -----------
+inline void from_json(const json &j, Session &s)
+{
+    j.at("sessionId").get_to(s.sessionId);
+    j.at("userId").get_to(s.userId);
+    j.at("role").get_to(s.role);
+    s.createdAt = j.value("createdAt", std::string{});
+    s.expiresAt = j.value("expiresAt", std::string{});
+}
+
 inline void to_json(json &j, const Session &s)
 {
     j = json{
@@ -423,6 +433,18 @@ inline void to_json(json &j, const Session &s)
 }
 
 // ----------- AuthResult (server → frontend) -----------
+inline void from_json(const json &j, AuthResult &a)
+{
+    j.at("success").get_to(a.success);
+    a.message = j.value("message", std::string{});
+    a.token = j.value("token", std::string{}); // <-- Safely grab the token
+
+    if (j.contains("session"))
+    {
+        a.session = j.at("session").get<Session>();
+    }
+}
+
 inline void to_json(json &j, const AuthResult &a)
 {
     j = json{

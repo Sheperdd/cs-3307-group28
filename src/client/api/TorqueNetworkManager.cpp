@@ -23,28 +23,29 @@ void TorqueNetworkManager::clearAuthToken()
   authToken.clear();
 }
 
-// Builds the base request so we don't have to repeat this code in get/post/patch
-QNetworkRequest TorqueNetworkManager::createRequest(const QString &endpoint)
-{
-  QNetworkRequest request(QUrl(baseUrl + endpoint));
-
-  // Tell the server we are sending and expecting JSON
-  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-  // If the user is logged in, attach their JWT to the Authorization header
-  if (!authToken.isEmpty())
-  {
-    request.setRawHeader("Authorization", ("Bearer " + authToken).toUtf8());
-  }
-
-  return request;
-}
-
 // Example of how the verbs are implemented
 QNetworkReply *TorqueNetworkManager::get(const QString &endpoint)
 {
   QNetworkRequest request = createRequest(endpoint);
   return manager->get(request); // Fires the request asynchronously
+}
+
+QNetworkReply *TorqueNetworkManager::post(const QString &endpoint, const QByteArray &body)
+{
+  QNetworkRequest request = createRequest(endpoint);
+  return manager->post(request, body);
+}
+
+QNetworkReply *TorqueNetworkManager::patch(const QString &endpoint, const QByteArray &body)
+{
+  QNetworkRequest request = createRequest(endpoint);
+  return manager->sendCustomRequest(request, "PATCH", body);
+}
+
+QNetworkReply *TorqueNetworkManager::deleteResource(const QString &endpoint)
+{
+  QNetworkRequest request = createRequest(endpoint);
+  return manager->deleteResource(request);
 }
 
 // This runs automatically every time a network request finishes
@@ -74,4 +75,21 @@ void TorqueNetworkManager::onReplyFinished(QNetworkReply *reply)
 
   // Note: We don't delete the reply object here using reply->deleteLater().
   // The service layer still needs to read it to handle specific errors (like a 400 Bad Request).
+}
+
+// Builds the base request so we don't have to repeat this code in get/post/patch
+QNetworkRequest TorqueNetworkManager::createRequest(const QString &endpoint)
+{
+  QNetworkRequest request(QUrl(baseUrl + endpoint));
+
+  // Tell the server we are sending and expecting JSON
+  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+  // If the user is logged in, attach their JWT to the Authorization header
+  if (!authToken.isEmpty())
+  {
+    request.setRawHeader("Authorization", ("Bearer " + authToken).toUtf8());
+  }
+
+  return request;
 }

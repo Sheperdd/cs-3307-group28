@@ -130,8 +130,12 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
 {
     json body;
     bool parseOk = true;
-    try { body = json::parse(req.body()); }
-    catch (...) {
+    try
+    {
+        body = json::parse(req.body());
+    }
+    catch (...)
+    {
         parseOk = false;
     }
     if (!parseOk)
@@ -143,8 +147,8 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
                                          "Missing 'email' and/or 'password'", ver, ka);
 
     std::string fullName = body.value("fullName", "");
-    std::string email    = body["email"].get<std::string>();
-    std::string phone    = body.value("phone", "");
+    std::string email = body["email"].get<std::string>();
+    std::string phone = body.value("phone", "");
     std::string password = body["password"].get<std::string>();
 
     UserRole role = UserRole::CUSTOMER;
@@ -201,7 +205,9 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
                     MechanicCreate mc;
                     ctx.mechanicService.createMechanicProfile(userId, mc);
                 }
-                catch (...) { /* logged but doesn't fail registration */ }
+                catch (...)
+                { /* logged but doesn't fail registration */
+                }
                 co_return;
             },
             net::use_awaitable);
@@ -209,15 +215,20 @@ CustomersHandler::registerUser(const http::request<http::string_body> &req,
 
     std::string token = JwtManager::generateToken(res.user->userId, res.user->role);
 
-    json responseBody = {
-        {"success", true},
-        {"userId", res.user->userId},
-        {"fullName", res.user->fullName},
-        {"email", res.user->email},
-        {"role", role == UserRole::MECHANIC ? "mechanic" : "customer"}};
+    // Build the nested Session DTO
+    Session sessionDto;
+    sessionDto.userId = res.user->userId;
+    sessionDto.role = res.user->role;
 
-    auto response = http_utils::make_json_response(http::status::created, responseBody, ver, ka);
-    // set HttpOnly cookie with JWT so subsequent requests are authenticated
+    // Build the main AuthResult DTO
+    AuthResult resultDto;
+    resultDto.success = true;
+    resultDto.message = "Registration successful";
+    resultDto.session = sessionDto;
+    resultDto.token = token;
+
+    // Serialize and return
+    auto response = http_utils::make_json_response(http::status::created, json(resultDto), ver, ka);
     response.set(http::field::set_cookie,
                  "session_token=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400");
     co_return response;
@@ -231,8 +242,12 @@ CustomersHandler::loginUser(const http::request<http::string_body> &req,
 {
     json body;
     bool parseOk = true;
-    try { body = json::parse(req.body()); }
-    catch (...) {
+    try
+    {
+        body = json::parse(req.body());
+    }
+    catch (...)
+    {
         parseOk = false;
     }
     if (!parseOk)
@@ -243,7 +258,7 @@ CustomersHandler::loginUser(const http::request<http::string_body> &req,
         co_return http_utils::make_error(http::status::bad_request,
                                          "Missing 'email' and/or 'password'", ver, ka);
 
-    std::string email    = body["email"].get<std::string>();
+    std::string email = body["email"].get<std::string>();
     std::string password = body["password"].get<std::string>();
 
     struct Result
@@ -277,14 +292,21 @@ CustomersHandler::loginUser(const http::request<http::string_body> &req,
 
     std::string token = JwtManager::generateToken(res.user->userId, res.user->role);
 
-    json responseBody = {
-        {"success", true},
-        {"userId", res.user->userId},
-        {"fullName", res.user->fullName},
-        {"email", res.user->email},
-        {"role", res.user->role == UserRole::MECHANIC ? "mechanic" : "customer"}};
+    // Build the nested Session DTO
+    Session sessionDto;
+    sessionDto.userId = res.user->userId;
+    sessionDto.role = res.user->role;
 
-    auto response = http_utils::make_json_response(http::status::ok, responseBody, ver, ka);
+    // Build the main AuthResult DTO
+    AuthResult resultDto;
+    resultDto.success = true;
+    resultDto.message = "Login successful";
+    resultDto.session = sessionDto;
+    resultDto.token = token;
+
+    // Serialize the DTO instantly using the json() cast
+    auto response = http_utils::make_json_response(http::status::ok, json(resultDto), ver, ka);
+
     response.set(http::field::set_cookie,
                  "session_token=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400");
     co_return response;
