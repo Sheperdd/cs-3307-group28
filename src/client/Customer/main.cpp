@@ -5,9 +5,9 @@
 #include <QDebug>
 #include <QApplication>
 
-#include "HomePage.h"
-#include "LandingPage.h"
-#include "MainWindow.h"
+#include "../MainWindows/LandingPage.h"
+#include "../MainWindows/HomePage.h"
+#include "../MainWindows/MainWindow.h"
 
 int main(int argc, char *argv[])
 {
